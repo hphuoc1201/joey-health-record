@@ -1,0 +1,149 @@
+"use client";
+
+import { useState } from "react";
+import clsx from "clsx";
+import { FileText, ImageIcon, ExternalLink } from "lucide-react";
+import { CATEGORIES } from "@/lib/categories";
+import type { DocumentCategory } from "@/lib/types";
+import { formatBytes } from "@/lib/format";
+import { UploadForm } from "./UploadForm";
+import { DeleteButton } from "./DeleteButton";
+import { deleteDocument } from "@/app/(app)/actions";
+
+export interface ClientDoc {
+  id: string;
+  category: DocumentCategory;
+  file_name: string;
+  mime_type: string | null;
+  size_bytes: number | null;
+  url: string;
+}
+
+export function VisitTabs({
+  visitId,
+  docs,
+  isAdmin,
+}: {
+  visitId: string;
+  docs: ClientDoc[];
+  isAdmin: boolean;
+}) {
+  const [active, setActive] = useState<DocumentCategory>(CATEGORIES[0].key);
+  const current = docs.filter((d) => d.category === active);
+
+  return (
+    <div>
+      {/* Tab bar */}
+      <div className="-mx-4 mb-4 flex gap-1 overflow-x-auto px-4">
+        {CATEGORIES.map((cat) => {
+          const count = docs.filter((d) => d.category === cat.key).length;
+          const Icon = cat.icon;
+          const isActive = active === cat.key;
+          return (
+            <button
+              key={cat.key}
+              onClick={() => setActive(cat.key)}
+              className={clsx(
+                "flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition",
+                isActive
+                  ? "bg-brand-600 text-white"
+                  : "bg-white text-gray-600 hover:bg-gray-100",
+              )}
+            >
+              <Icon className="h-4 w-4" />
+              {cat.label}
+              {count > 0 && (
+                <span
+                  className={clsx(
+                    "rounded-full px-1.5 text-xs",
+                    isActive ? "bg-white/25" : "bg-gray-100 text-gray-500",
+                  )}
+                >
+                  {count}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {isAdmin && (
+        <div className="mb-4">
+          <UploadForm visitId={visitId} category={active} />
+        </div>
+      )}
+
+      {current.length === 0 ? (
+        <p className="rounded-lg border border-dashed border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-400">
+          Chưa có tệp nào trong mục này.
+        </p>
+      ) : (
+        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {current.map((doc) => (
+            <DocCard
+              key={doc.id}
+              doc={doc}
+              visitId={visitId}
+              isAdmin={isAdmin}
+            />
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function DocCard({
+  doc,
+  visitId,
+  isAdmin,
+}: {
+  doc: ClientDoc;
+  visitId: string;
+  isAdmin: boolean;
+}) {
+  const isImage = (doc.mime_type ?? "").startsWith("image/");
+
+  return (
+    <li className="group relative overflow-hidden rounded-lg border border-gray-200 bg-white">
+      <a href={doc.url} target="_blank" rel="noopener noreferrer" className="block">
+        <div className="flex aspect-square items-center justify-center bg-gray-50">
+          {isImage ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={doc.url}
+              alt={doc.file_name}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <FileText className="h-10 w-10 text-gray-300" />
+          )}
+        </div>
+        <div className="flex items-center gap-1.5 px-2.5 py-2">
+          {isImage ? (
+            <ImageIcon className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+          ) : (
+            <FileText className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+          )}
+          <span className="truncate text-xs text-gray-700">{doc.file_name}</span>
+          <ExternalLink className="ml-auto h-3 w-3 shrink-0 text-gray-300" />
+        </div>
+        {doc.size_bytes ? (
+          <span className="absolute left-1.5 top-1.5 rounded bg-black/50 px-1.5 py-0.5 text-[10px] text-white">
+            {formatBytes(doc.size_bytes)}
+          </span>
+        ) : null}
+      </a>
+      {isAdmin && (
+        <div className="absolute right-1.5 top-1.5">
+          <div className="rounded-md bg-white/90 shadow-sm">
+            <DeleteButton
+              action={deleteDocument.bind(null, doc.id, visitId)}
+              confirmText={`Xóa tệp "${doc.file_name}"?`}
+            />
+          </div>
+        </div>
+      )}
+    </li>
+  );
+}
