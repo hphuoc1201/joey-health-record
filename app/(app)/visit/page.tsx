@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
@@ -12,12 +12,14 @@ import {
   CalendarDays,
   FileHeart,
   Loader2,
+  Download,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useVisit, useDeleteVisit, canEditProfile } from "@/lib/queries";
 import { VisitTabs } from "@/components/VisitTabs";
 import { DeleteButton } from "@/components/DeleteButton";
 import { ErrorState } from "@/components/ErrorState";
+import { downloadVisitsZip } from "@/lib/download";
 import { formatDate } from "@/lib/format";
 
 function VisitDetail() {
@@ -28,6 +30,23 @@ function VisitDetail() {
   const { data, isPending, error, refetch } = useVisit(id);
   const deleteVisit = useDeleteVisit();
   const canEdit = canEditProfile(data?.visit.profiles, auth);
+  const [downloading, setDownloading] = useState(false);
+
+  async function downloadThis() {
+    if (!data || downloading) return;
+    setDownloading(true);
+    try {
+      await downloadVisitsZip(
+        auth.supabase,
+        [data.visit],
+        data.visit.profiles?.full_name ?? "ho-so",
+      );
+    } catch {
+      alert("Tải xuống thất bại. Vui lòng thử lại.");
+    } finally {
+      setDownloading(false);
+    }
+  }
 
   if (error) {
     return <ErrorState error={error} onRetry={() => refetch()} />;
@@ -96,14 +115,27 @@ function VisitDetail() {
               )}
             </div>
           </div>
-          {canEdit && (
-            <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={downloadThis}
+              disabled={downloading}
+              className="btn-secondary"
+            >
+              {downloading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+              Tải
+            </button>
+            {canEdit && (
               <Link href={`/visit/edit?id=${visit.id}`} className="btn-secondary">
                 <Pencil className="h-4 w-4" />
                 Sửa
               </Link>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         <dl className="mt-4 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">

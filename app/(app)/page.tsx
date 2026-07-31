@@ -99,7 +99,7 @@ export default function TimelinePage() {
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Dòng thời gian</h1>
+        <h1 className="text-2xl font-bold">Lịch sử khám</h1>
         {canManage && (
           <Link
             href={patientId ? `/visit/new?profile=${patientId}` : "/visit/new"}
@@ -171,7 +171,7 @@ export default function TimelinePage() {
                     <button
                       onClick={() => download(visitList)}
                       disabled={downloading}
-                      className="btn-secondary"
+                      className="btn-primary !px-3 !py-2 text-sm"
                     >
                       {downloading ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
