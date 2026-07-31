@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { DEV_LOGIN } from "@/lib/config";
 import { HeartPulse, Loader2 } from "lucide-react";
 
 export default function LoginPage() {
@@ -18,6 +19,31 @@ export default function LoginPage() {
 
     const supabase = createClient();
     const cleanEmail = email.trim().toLowerCase();
+
+    if (DEV_LOGIN) {
+      // TESTING: sign in with just the email, no OTP.
+      try {
+        const res = await fetch("/api/dev-login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: cleanEmail }),
+        });
+        const body = (await res.json()) as { otp?: string; error?: string };
+        if (!res.ok || !body.otp) throw new Error(body.error ?? "Lỗi đăng nhập.");
+        const { error } = await supabase.auth.verifyOtp({
+          email: cleanEmail,
+          token: body.otp,
+          type: "email",
+        });
+        if (error) throw error;
+        router.replace("/");
+        router.refresh();
+      } catch (err) {
+        setLoading(false);
+        setError(err instanceof Error ? err.message : "Không đăng nhập được.");
+      }
+      return;
+    }
 
     // shouldCreateUser: false — only accounts the admin has already created can
     // receive a code. Unknown emails get no OTP, blocking outsiders.
@@ -47,7 +73,9 @@ export default function LoginPage() {
           </div>
           <h1 className="text-xl font-semibold">Hồ sơ sức khỏe</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Đăng nhập bằng email để nhận mã xác thực
+            {DEV_LOGIN
+              ? "Chế độ thử nghiệm — nhập email để vào"
+              : "Đăng nhập bằng email để nhận mã xác thực"}
           </p>
         </div>
 
@@ -79,12 +107,14 @@ export default function LoginPage() {
             className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 font-medium text-white transition hover:bg-brand-700 disabled:opacity-60"
           >
             {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-            Gửi mã xác thực
+            {DEV_LOGIN ? "Đăng nhập" : "Gửi mã xác thực"}
           </button>
         </form>
 
         <p className="mt-6 text-center text-xs text-gray-400">
-          Chỉ những email đã được cấp quyền mới đăng nhập được.
+          {DEV_LOGIN
+            ? "Chế độ thử nghiệm: bỏ qua mã OTP. Sẽ bật lại khi dùng thật."
+            : "Chỉ những email đã được cấp quyền mới đăng nhập được."}
         </p>
       </div>
     </main>

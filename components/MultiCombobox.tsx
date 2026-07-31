@@ -143,6 +143,7 @@ export function MultiCombobox({
               <li key={`${opt.value}|${opt.label}`}>
                 <button
                   type="button"
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => add({ value: opt.value, label: opt.label })}
                   className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-brand-50 hover:text-brand-700"
                 >
@@ -159,6 +160,7 @@ export function MultiCombobox({
               <li>
                 <button
                   type="button"
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => add({ value: "", label: query.trim() })}
                   className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-brand-50 hover:text-brand-700"
                 >

@@ -1,18 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { PlusCircle, CalendarClock, Loader2, UserPlus } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  PlusCircle,
+  CalendarClock,
+  Loader2,
+  UserPlus,
+  Download,
+  CheckSquare,
+  X,
+} from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useProfiles, useVisits } from "@/lib/queries";
 import { TimelineCard } from "@/components/TimelineCard";
 import { PatientSelect, lastPatientKey } from "@/components/PatientSelect";
 import { ErrorState } from "@/components/ErrorState";
+import { downloadVisitsZip } from "@/lib/download";
 import { formatMonthYear } from "@/lib/format";
 import type { VisitWithProfile } from "@/lib/types";
 
 export default function TimelinePage() {
-  const { email, canManage } = useAuth();
+  const { email, canManage, supabase } = useAuth();
   const {
     data: profiles,
     isPending: profilesPending,
@@ -46,7 +55,46 @@ export default function TimelinePage() {
     refetch: refetchVisits,
   } = useVisits(patientId || undefined);
 
-  const groups = groupByMonth(patientId ? (visits ?? []) : []);
+  const visitList = patientId ? (visits ?? []) : [];
+  const groups = groupByMonth(visitList);
+
+  // Selection + download state.
+  const [selectMode, setSelectMode] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [downloading, setDownloading] = useState(false);
+  const patientName = useMemo(
+    () => profiles?.find((p) => p.id === patientId)?.full_name ?? "ho-so",
+    [profiles, patientId],
+  );
+
+  // Reset selection when the patient changes or select mode is exited.
+  useEffect(() => {
+    setSelectMode(false);
+    setSelected(new Set());
+  }, [patientId]);
+
+  function toggle(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  async function download(which: VisitWithProfile[]) {
+    if (which.length === 0 || downloading) return;
+    setDownloading(true);
+    try {
+      await downloadVisitsZip(supabase, which, patientName);
+      setSelectMode(false);
+      setSelected(new Set());
+    } catch {
+      alert("Tải xuống thất bại. Vui lòng thử lại.");
+    } finally {
+      setDownloading(false);
+    }
+  }
 
   return (
     <div>
@@ -88,20 +136,82 @@ export default function TimelinePage() {
           ) : groups.length === 0 ? (
             <EmptyTimeline canManage={canManage} patientId={patientId} />
           ) : (
-            <div className="space-y-6">
-              {groups.map((group) => (
-                <section key={group.key}>
-                  <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-400">
-                    {group.label}
-                  </h2>
-                  <div className="space-y-3">
-                    {group.visits.map((v) => (
-                      <TimelineCard key={v.id} visit={v} />
-                    ))}
-                  </div>
-                </section>
-              ))}
-            </div>
+            <>
+              {/* Download toolbar */}
+              <div className="mb-4 flex items-center gap-2">
+                {selectMode ? (
+                  <>
+                    <button
+                      onClick={() =>
+                        download(visitList.filter((v) => selected.has(v.id)))
+                      }
+                      disabled={selected.size === 0 || downloading}
+                      className="btn-primary !px-3 !py-2 text-sm"
+                    >
+                      {downloading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Download className="h-4 w-4" />
+                      )}
+                      Tải {selected.size > 0 ? `${selected.size} mục` : "đã chọn"}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSelectMode(false);
+                        setSelected(new Set());
+                      }}
+                      className="btn-secondary"
+                    >
+                      <X className="h-4 w-4" />
+                      Hủy
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => download(visitList)}
+                      disabled={downloading}
+                      className="btn-secondary"
+                    >
+                      {downloading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Download className="h-4 w-4" />
+                      )}
+                      Tải tất cả
+                    </button>
+                    <button
+                      onClick={() => setSelectMode(true)}
+                      className="btn-secondary"
+                    >
+                      <CheckSquare className="h-4 w-4" />
+                      Chọn
+                    </button>
+                  </>
+                )}
+              </div>
+
+              <div className="space-y-6">
+                {groups.map((group) => (
+                  <section key={group.key}>
+                    <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-400">
+                      {group.label}
+                    </h2>
+                    <div className="space-y-3">
+                      {group.visits.map((v) => (
+                        <TimelineCard
+                          key={v.id}
+                          visit={v}
+                          selectMode={selectMode}
+                          selected={selected.has(v.id)}
+                          onToggle={toggle}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                ))}
+              </div>
+            </>
           )}
         </>
       )}

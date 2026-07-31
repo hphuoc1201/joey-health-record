@@ -165,6 +165,7 @@ export function Combobox({
                 <button
                   type="button"
                   onMouseEnter={() => setHighlight(i)}
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => choose(opt)}
                   className={clsx(
                     "flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors",
@@ -188,6 +189,7 @@ export function Combobox({
                 <button
                   type="button"
                   onMouseEnter={() => setHighlight(filtered.length)}
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={chooseCustom}
                   className={clsx(
                     "flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors",
