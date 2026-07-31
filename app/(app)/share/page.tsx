@@ -5,13 +5,14 @@ import { Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useShareVisits } from "@/lib/queries";
 import { ShareManager } from "@/components/ShareManager";
+import { ManagersSection } from "@/components/ManagersSection";
 
 export default function SharePage() {
   const router = useRouter();
-  const { isAdmin, loading } = useAuth();
+  const { canManage, isAdmin, loading } = useAuth();
   const { data: visits, isPending } = useShareVisits();
 
-  if (!loading && !isAdmin) {
+  if (!loading && !canManage) {
     router.replace("/");
     return null;
   }
@@ -23,6 +24,9 @@ export default function SharePage() {
         Thêm email để cho phép người khác xem (chỉ đọc) một lần khám. Người được
         thêm sẽ đăng nhập bằng chính email đó và nhận mã xác thực.
       </p>
+
+      {isAdmin && <ManagersSection />}
+
       {isPending ? (
         <div className="flex justify-center py-16">
           <Loader2 className="h-6 w-6 animate-spin text-brand-600" />

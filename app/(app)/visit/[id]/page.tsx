@@ -14,7 +14,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
-import { useVisit, useDeleteVisit } from "@/lib/queries";
+import { useVisit, useDeleteVisit, canEditProfile } from "@/lib/queries";
 import { VisitTabs } from "@/components/VisitTabs";
 import { DeleteButton } from "@/components/DeleteButton";
 import { formatDate } from "@/lib/format";
@@ -26,9 +26,10 @@ export default function VisitDetailPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
-  const { isAdmin } = useAuth();
+  const auth = useAuth();
   const { data, isPending } = useVisit(id);
   const deleteVisit = useDeleteVisit();
+  const canEdit = canEditProfile(data?.visit.profiles, auth);
 
   if (isPending) {
     return (
@@ -76,14 +77,21 @@ export default function VisitDetailPage({
             </div>
             <h1 className="flex items-center gap-2 text-xl font-bold text-gray-900">
               <FileHeart className="h-5 w-5 shrink-0 text-brand-600" />
-              {visit.diagnosis || "Chưa có chẩn đoán"}
+              <span>
+                {visit.diagnosis || "Chưa có chẩn đoán"}
+                {visit.icd_code && (
+                  <span className="ml-2 align-middle rounded bg-gray-100 px-1.5 py-0.5 font-mono text-xs font-medium text-gray-600">
+                    {visit.icd_code}
+                  </span>
+                )}
+              </span>
             </h1>
           </div>
-          {isAdmin && (
+          {canEdit && (
             <div className="flex shrink-0 items-center gap-2">
               <Link
                 href={`/visit/${visit.id}/edit`}
-                className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-50"
+                className="btn-secondary"
               >
                 <Pencil className="h-4 w-4" />
                 Sửa
@@ -112,10 +120,10 @@ export default function VisitDetailPage({
         visitId={visit.id}
         profileId={visit.profile_id}
         docs={docs}
-        isAdmin={isAdmin}
+        canEdit={canEdit}
       />
 
-      {isAdmin && (
+      {canEdit && (
         <div className="mt-8 border-t border-gray-100 pt-5">
           <DeleteButton
             action={async () => {

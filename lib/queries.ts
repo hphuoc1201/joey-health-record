@@ -42,7 +42,7 @@ export function useVisits(profileId?: string) {
     queryFn: async (): Promise<VisitWithProfile[]> => {
       let query = supabase
         .from("visits")
-        .select("*, profiles(id, full_name, relationship)")
+        .select("*, profiles(id, full_name, relationship, owner_email)")
         .order("visit_date", { ascending: false });
       if (profileId) query = query.eq("profile_id", profileId);
       const { data, error } = await query;
@@ -87,7 +87,7 @@ export function useVisit(id: string) {
     queryFn: async (): Promise<VisitDetail | null> => {
       const { data: visit, error } = await supabase
         .from("visits")
-        .select("*, profiles(id, full_name, relationship)")
+        .select("*, profiles(id, full_name, relationship, owner_email)")
         .eq("id", id)
         .maybeSingle();
       if (error) throw error;
@@ -118,10 +118,10 @@ export interface ShareVisit {
 }
 
 export function useShareVisits() {
-  const { supabase, session, isAdmin } = useAuth();
+  const { supabase, session, canManage } = useAuth();
   return useQuery({
     queryKey: ["share-visits"],
-    enabled: Boolean(session) && isAdmin,
+    enabled: Boolean(session) && canManage,
     queryFn: async (): Promise<ShareVisit[]> => {
       const { data, error } = await supabase
         .from("visits")
@@ -185,6 +185,7 @@ export interface VisitInput {
   hospital: string | null;
   specialty: string | null;
   diagnosis: string | null;
+  icd_code: string | null;
   doctor: string | null;
   notes: string | null;
 }
@@ -304,6 +305,76 @@ export function useDeleteDocument() {
     },
     onSuccess: (_r, vars) =>
       qc.invalidateQueries({ queryKey: ["visit", vars.visitId] }),
+  });
+}
+
+// --- Permissions helper -------------------------------------------------
+
+// Can the given user edit this profile (and its visits/documents)?
+export function canEditProfile(
+  profile: { owner_email: string | null } | null | undefined,
+  auth: { isAdmin: boolean; email: string },
+): boolean {
+  if (auth.isAdmin) return true;
+  return Boolean(profile && profile.owner_email === auth.email);
+}
+
+// --- Managers (admin only) ----------------------------------------------
+
+export interface ManagerRow {
+  email: string;
+  created_at: string;
+}
+
+export function useManagers() {
+  const { supabase, session, isAdmin } = useAuth();
+  return useQuery({
+    queryKey: ["managers"],
+    enabled: Boolean(session) && isAdmin,
+    queryFn: async (): Promise<ManagerRow[]> => {
+      const { data, error } = await supabase
+        .from("managers")
+        .select("*")
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as ManagerRow[];
+    },
+  });
+}
+
+export function useAddManager() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (email: string) => {
+      const res = await fetch("/api/managers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(body.error ?? "Không thể thêm người quản lý.");
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["managers"] }),
+  });
+}
+
+export function useRemoveManager() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (email: string) => {
+      const res = await fetch("/api/managers", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(body.error ?? "Không thể gỡ người quản lý.");
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["managers"] }),
   });
 }
 

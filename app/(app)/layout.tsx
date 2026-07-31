@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import { Nav } from "@/components/Nav";
 
 function Shell({ children }: { children: React.ReactNode }) {
-  const { session, isAdmin, loading } = useAuth();
+  const { session, canManage, loading } = useAuth();
 
   // While the session loads (or after redirecting to /login), show a splash.
   if (loading || !session) {
@@ -19,7 +19,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen">
-      <Nav isAdmin={isAdmin} />
+      <Nav canManage={canManage} />
       {/* Left padding for the desktop sidebar; bottom padding for the mobile nav. */}
       <main className="mx-auto max-w-3xl px-4 pb-24 pt-6 md:pl-64 md:pb-10">
         {children}

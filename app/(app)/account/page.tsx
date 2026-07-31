@@ -13,7 +13,7 @@ import { useAuth } from "@/lib/auth-context";
 
 export default function AccountPage() {
   const router = useRouter();
-  const { supabase, email, isAdmin } = useAuth();
+  const { supabase, email, role } = useAuth();
   const [signingOut, setSigningOut] = useState(false);
 
   async function handleSignOut() {
@@ -37,10 +37,15 @@ export default function AccountPage() {
               {email}
             </p>
             <p className="mt-0.5 text-sm">
-              {isAdmin ? (
+              {role === "admin" ? (
                 <span className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700">
                   <ShieldCheck className="h-3 w-3" />
                   Quản trị viên
+                </span>
+              ) : role === "manager" ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                  <ShieldCheck className="h-3 w-3" />
+                  Người quản lý
                 </span>
               ) : (
                 <span className="text-gray-500">Người xem</span>

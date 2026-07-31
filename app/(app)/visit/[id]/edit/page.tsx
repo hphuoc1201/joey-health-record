@@ -15,12 +15,12 @@ export default function EditVisitPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
-  const { isAdmin, loading } = useAuth();
+  const { canManage, loading } = useAuth();
   const { data, isPending } = useVisit(id);
   const { data: profiles } = useProfiles();
   const saveVisit = useSaveVisit();
 
-  if (!loading && !isAdmin) {
+  if (!loading && !canManage) {
     router.replace("/");
     return null;
   }

@@ -6,23 +6,20 @@ import type { Profile } from "@/lib/types";
 import {
   useSaveProfile,
   useDeleteProfile,
+  canEditProfile,
   type ProfileInput,
 } from "@/lib/queries";
+import { useAuth } from "@/lib/auth-context";
 import { DeleteButton } from "./DeleteButton";
 import { formatDate } from "@/lib/format";
 
-export function ProfilesManager({
-  profiles,
-  isAdmin,
-}: {
-  profiles: Profile[];
-  isAdmin: boolean;
-}) {
+export function ProfilesManager({ profiles }: { profiles: Profile[] }) {
+  const { canManage } = useAuth();
   const [adding, setAdding] = useState(false);
 
   return (
     <div className="space-y-4">
-      {isAdmin && (
+      {canManage && (
         <div>
           {adding ? (
             <div className="rounded-xl border border-gray-200 bg-white p-4">
@@ -51,14 +48,14 @@ export function ProfilesManager({
 
       {profiles.length === 0 && !adding ? (
         <p className="rounded-lg border border-dashed border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-400">
-          {isAdmin
+          {canManage
             ? "Chưa có thành viên nào. Hãy thêm người đầu tiên."
             : "Chưa có hồ sơ nào được chia sẻ với bạn."}
         </p>
       ) : (
         <ul className="space-y-3">
           {profiles.map((p) => (
-            <ProfileCard key={p.id} profile={p} isAdmin={isAdmin} />
+            <ProfileCard key={p.id} profile={p} />
           ))}
         </ul>
       )}
@@ -66,7 +63,14 @@ export function ProfilesManager({
   );
 }
 
-function ProfileCard({ profile, isAdmin }: { profile: Profile; isAdmin: boolean }) {
+function ProfileCard({ profile }: { profile: Profile }) {
+  const auth = useAuth();
+  const canEdit = canEditProfile(profile, auth);
+  // Admin sees whose family each profile belongs to.
+  const ownerLabel =
+    auth.isAdmin && profile.owner_email && profile.owner_email !== auth.email
+      ? profile.owner_email
+      : null;
   const [editing, setEditing] = useState(false);
   const deleteProfile = useDeleteProfile();
 
@@ -88,7 +92,7 @@ function ProfileCard({ profile, isAdmin }: { profile: Profile; isAdmin: boolean 
   }
 
   return (
-    <li className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-4">
+    <li className="card card-hover flex items-center gap-3 p-4">
       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600">
         <UserIcon className="h-5 w-5" />
       </div>
@@ -99,12 +103,17 @@ function ProfileCard({ profile, isAdmin }: { profile: Profile; isAdmin: boolean 
             .filter(Boolean)
             .join(" · ") || "—"}
         </p>
+        {ownerLabel && (
+          <p className="mt-0.5 truncate text-xs text-gray-400">
+            Chủ hộ: {ownerLabel}
+          </p>
+        )}
       </div>
-      {isAdmin && (
+      {canEdit && (
         <div className="flex shrink-0 items-center gap-1">
           <button
             onClick={() => setEditing(true)}
-            className="flex h-8 w-8 items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+            className="flex h-8 w-8 items-center justify-center rounded-md text-gray-400 transition-all duration-150 hover:bg-gray-100 hover:text-gray-700 active:scale-90"
             title="Sửa"
           >
             <Pencil className="h-4 w-4" />

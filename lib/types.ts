@@ -12,6 +12,7 @@ export interface Profile {
   dob: string | null;
   gender: string | null;
   notes: string | null;
+  owner_email: string | null;
   created_at: string;
 }
 
@@ -22,13 +23,17 @@ export interface Visit {
   hospital: string | null;
   specialty: string | null;
   diagnosis: string | null;
+  icd_code: string | null;
   doctor: string | null;
   notes: string | null;
   created_at: string;
 }
 
 export interface VisitWithProfile extends Visit {
-  profiles: Pick<Profile, "id" | "full_name" | "relationship"> | null;
+  profiles: Pick<
+    Profile,
+    "id" | "full_name" | "relationship" | "owner_email"
+  > | null;
 }
 
 export interface HealthDocument {

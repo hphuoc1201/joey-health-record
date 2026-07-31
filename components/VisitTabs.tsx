@@ -14,12 +14,12 @@ export function VisitTabs({
   visitId,
   profileId,
   docs,
-  isAdmin,
+  canEdit,
 }: {
   visitId: string;
   profileId: string;
   docs: ClientDoc[];
-  isAdmin: boolean;
+  canEdit: boolean;
 }) {
   const [active, setActive] = useState<DocumentCategory>(CATEGORIES[0].key);
   const current = docs.filter((d) => d.category === active);
@@ -60,7 +60,7 @@ export function VisitTabs({
         })}
       </div>
 
-      {isAdmin && (
+      {canEdit && (
         <div className="mb-4">
           <UploadForm visitId={visitId} profileId={profileId} category={active} />
         </div>
@@ -77,7 +77,7 @@ export function VisitTabs({
               key={doc.id}
               doc={doc}
               visitId={visitId}
-              isAdmin={isAdmin}
+              canEdit={canEdit}
             />
           ))}
         </ul>
@@ -89,11 +89,11 @@ export function VisitTabs({
 function DocCard({
   doc,
   visitId,
-  isAdmin,
+  canEdit,
 }: {
   doc: ClientDoc;
   visitId: string;
-  isAdmin: boolean;
+  canEdit: boolean;
 }) {
   const isImage = (doc.mime_type ?? "").startsWith("image/");
   const deleteDocument = useDeleteDocument();
@@ -128,7 +128,7 @@ function DocCard({
           </span>
         ) : null}
       </a>
-      {isAdmin && (
+      {canEdit && (
         <div className="absolute right-1.5 top-1.5">
           <div className="rounded-md bg-white/90 shadow-sm">
             <DeleteButton

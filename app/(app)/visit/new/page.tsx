@@ -10,13 +10,13 @@ import { VisitForm } from "@/components/VisitForm";
 
 function NewVisit() {
   const router = useRouter();
-  const { isAdmin, loading } = useAuth();
+  const { canManage, loading } = useAuth();
   const params = useSearchParams();
   const defaultProfileId = params.get("profile") ?? undefined;
   const { data: profiles, isPending } = useProfiles();
   const saveVisit = useSaveVisit();
 
-  if (!loading && !isAdmin) {
+  if (!loading && !canManage) {
     router.replace("/");
     return null;
   }

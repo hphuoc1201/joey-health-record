@@ -11,11 +11,18 @@ import { useRouter } from "next/navigation";
 import type { SupabaseClient, Session } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 
+export type Role = "admin" | "manager" | "viewer";
+
 interface AuthState {
   supabase: SupabaseClient;
   session: Session | null;
   email: string;
   isAdmin: boolean;
+  isManager: boolean;
+  /** admin | manager | viewer */
+  role: Role;
+  /** admin or manager — may create records within their own scope */
+  canManage: boolean;
   loading: boolean;
 }
 
@@ -26,6 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const supabase = useMemo(() => createClient(), []);
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isManager, setIsManager] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -36,21 +44,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (active) {
           setSession(null);
           setIsAdmin(false);
+          setIsManager(false);
           setLoading(false);
         }
         router.replace("/login");
         return;
       }
       const email = (current.user.email ?? "").toLowerCase();
-      // RLS lets a user read only their own admins row.
-      const { data } = await supabase
-        .from("admins")
-        .select("email")
-        .eq("email", email)
-        .maybeSingle();
+      // RLS lets a user read only their own admins/managers row.
+      const [{ data: adminRow }, { data: managerRow }] = await Promise.all([
+        supabase.from("admins").select("email").eq("email", email).maybeSingle(),
+        supabase.from("managers").select("email").eq("email", email).maybeSingle(),
+      ]);
       if (!active) return;
       setSession(current);
-      setIsAdmin(Boolean(data));
+      setIsAdmin(Boolean(adminRow));
+      setIsManager(Boolean(managerRow));
       setLoading(false);
     }
 
@@ -74,9 +83,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       session,
       email: (session?.user.email ?? "").toLowerCase(),
       isAdmin,
+      isManager,
+      role: isAdmin ? "admin" : isManager ? "manager" : "viewer",
+      canManage: isAdmin || isManager,
       loading,
     }),
-    [supabase, session, isAdmin, loading],
+    [supabase, session, isAdmin, isManager, loading],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -33,7 +33,7 @@ export function DeleteButton({
         onClick={() => {
           if (window.confirm(confirmText)) run();
         }}
-        className="flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:opacity-60"
+        className="btn-danger"
       >
         {isPending ? (
           <Loader2 className="h-4 w-4 animate-spin" />

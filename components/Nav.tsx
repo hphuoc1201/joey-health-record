@@ -16,14 +16,14 @@ interface NavItem {
   href: string;
   label: string;
   icon: LucideIcon;
-  adminOnly?: boolean;
+  manageOnly?: boolean; // visible to admin + manager
 }
 
 const ITEMS: NavItem[] = [
   { href: "/", label: "Dòng thời gian", icon: Home },
   { href: "/profiles", label: "Hồ sơ", icon: Users },
-  { href: "/visit/new", label: "Thêm", icon: PlusCircle, adminOnly: true },
-  { href: "/share", label: "Chia sẻ", icon: Share2, adminOnly: true },
+  { href: "/visit/new", label: "Thêm", icon: PlusCircle, manageOnly: true },
+  { href: "/share", label: "Chia sẻ", icon: Share2, manageOnly: true },
   { href: "/account", label: "Tài khoản", icon: User },
 ];
 
@@ -32,9 +32,9 @@ function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(href + "/");
 }
 
-export function Nav({ isAdmin }: { isAdmin: boolean }) {
+export function Nav({ canManage }: { canManage: boolean }) {
   const pathname = usePathname();
-  const items = ITEMS.filter((i) => !i.adminOnly || isAdmin);
+  const items = ITEMS.filter((i) => !i.manageOnly || canManage);
 
   return (
     <>
@@ -55,10 +55,10 @@ export function Nav({ isAdmin }: { isAdmin: boolean }) {
                 key={item.href}
                 href={item.href}
                 className={clsx(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition",
+                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150 active:scale-[0.97]",
                   active
                     ? "bg-brand-50 text-brand-700"
-                    : "text-gray-600 hover:bg-gray-100",
+                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900",
                 )}
               >
                 <Icon className="h-5 w-5" />
@@ -79,8 +79,8 @@ export function Nav({ isAdmin }: { isAdmin: boolean }) {
               key={item.href}
               href={item.href}
               className={clsx(
-                "flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-medium transition",
-                active ? "text-brand-600" : "text-gray-500",
+                "flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-medium transition-all duration-150 active:scale-90",
+                active ? "text-brand-600" : "text-gray-500 hover:text-gray-700",
               )}
             >
               <Icon className="h-5 w-5" />

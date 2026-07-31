@@ -8,9 +8,9 @@ const bodySchema = z.object({
   email: z.string().trim().toLowerCase().email(),
 });
 
-// The one remaining server endpoint: sharing a visit requires creating an
-// auth account for the invited email (service_role), which must never run
-// in the browser. The caller must be an authenticated admin.
+// Sharing a visit requires creating an auth account for the invited email
+// (service_role), which must never run in the browser. The caller must be an
+// admin, or the manager who owns the visit's profile.
 export async function POST(request: Request) {
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
@@ -18,7 +18,7 @@ export async function POST(request: Request) {
   }
   const { visitId, email } = parsed.data;
 
-  // Verify the caller's session and admin status via their cookie-bound client.
+  // Verify the caller's session via their cookie-bound client.
   const supabase = await createClient();
   const {
     data: { user },
@@ -26,13 +26,25 @@ export async function POST(request: Request) {
   if (!user?.email) {
     return NextResponse.json({ error: "Chưa đăng nhập." }, { status: 401 });
   }
+  const callerEmail = user.email.toLowerCase();
+
   const { data: adminRow } = await supabase
     .from("admins")
     .select("email")
-    .eq("email", user.email.toLowerCase())
+    .eq("email", callerEmail)
     .maybeSingle();
+
   if (!adminRow) {
-    return NextResponse.json({ error: "Không có quyền." }, { status: 403 });
+    // Not an admin — allow only the owner of the visit's profile. The caller's
+    // RLS-bound client can read the visit/profile only if they may see it.
+    const { data: visitRow } = await supabase
+      .from("visits")
+      .select("id, profiles(owner_email)")
+      .eq("id", visitId)
+      .maybeSingle<{ id: string; profiles: { owner_email: string | null } | null }>();
+    if (!visitRow || visitRow.profiles?.owner_email !== callerEmail) {
+      return NextResponse.json({ error: "Không có quyền." }, { status: 403 });
+    }
   }
 
   const admin = createAdminClient();

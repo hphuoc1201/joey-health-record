@@ -1,13 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, Save } from "lucide-react";
 import type { Profile, Visit } from "@/lib/types";
 import type { VisitInput } from "@/lib/queries";
+import { useVisits } from "@/lib/queries";
+import { Combobox, type ComboOption } from "./Combobox";
+import { HOSPITALS } from "@/lib/hospitals";
+import { SPECIALTIES } from "@/lib/specialties";
+import { ICD10 } from "@/lib/icd10";
 
-function emptyToNull(v: FormDataEntryValue | null): string | null {
-  const s = typeof v === "string" ? v.trim() : "";
-  return s.length > 0 ? s : null;
+function toNull(s: string): string | null {
+  const t = s.trim();
+  return t.length > 0 ? t : null;
 }
 
 export function VisitForm({
@@ -21,26 +26,75 @@ export function VisitForm({
   visit?: Visit;
   defaultProfileId?: string;
 }) {
+  const isEdit = Boolean(visit);
+  const { data: allVisits } = useVisits();
+
+  const [profileId, setProfileId] = useState(
+    visit?.profile_id ?? defaultProfileId ?? "",
+  );
+  const [visitDate, setVisitDate] = useState(visit?.visit_date ?? "");
+  const [hospital, setHospital] = useState(visit?.hospital ?? "");
+  const [specialty, setSpecialty] = useState(visit?.specialty ?? "");
+  const [diagnosis, setDiagnosis] = useState(visit?.diagnosis ?? "");
+  const [icdCode, setIcdCode] = useState(visit?.icd_code ?? "");
+  const [doctor, setDoctor] = useState(visit?.doctor ?? "");
+  const [notes, setNotes] = useState(visit?.notes ?? "");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Hospital options: curated list + any name already used in visits.
+  const hospitalOptions = useMemo<ComboOption[]>(() => {
+    const seen = new Set(HOSPITALS);
+    const extras: string[] = [];
+    for (const v of allVisits ?? []) {
+      if (v.hospital && !seen.has(v.hospital)) {
+        seen.add(v.hospital);
+        extras.push(v.hospital);
+      }
+    }
+    return [...extras.sort(), ...HOSPITALS].map((h) => ({ value: h, label: h }));
+  }, [allVisits]);
+
+  const specialtyOptions = useMemo<ComboOption[]>(
+    () => SPECIALTIES.map((s) => ({ value: s, label: s })),
+    [],
+  );
+
+  const icdOptions = useMemo<ComboOption[]>(
+    () => ICD10.map((e) => ({ value: e.code, label: e.label, hint: e.code })),
+    [],
+  );
+
+  // Prefill hospital/specialty from the patient's most recent visit when the
+  // patient changes (create mode only). Skips the very first render in edit
+  // mode so existing values are never overwritten.
+  const prefillFor = useRef<string | null>(isEdit ? visit!.profile_id : null);
+  useEffect(() => {
+    if (!profileId || prefillFor.current === profileId) return;
+    prefillFor.current = profileId;
+    const latest = (allVisits ?? []).find((v) => v.profile_id === profileId);
+    if (latest) {
+      if (latest.hospital) setHospital(latest.hospital);
+      if (latest.specialty) setSpecialty(latest.specialty);
+    }
+  }, [profileId, allVisits]);
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (!profileId || !visitDate) return;
     setError(null);
-    const fd = new FormData(e.currentTarget);
-    const values: VisitInput = {
-      profile_id: String(fd.get("profile_id") ?? ""),
-      visit_date: String(fd.get("visit_date") ?? ""),
-      hospital: emptyToNull(fd.get("hospital")),
-      specialty: emptyToNull(fd.get("specialty")),
-      diagnosis: emptyToNull(fd.get("diagnosis")),
-      doctor: emptyToNull(fd.get("doctor")),
-      notes: emptyToNull(fd.get("notes")),
-    };
-    if (!values.profile_id || !values.visit_date) return;
     setPending(true);
     try {
-      await onSubmit(values);
+      await onSubmit({
+        profile_id: profileId,
+        visit_date: visitDate,
+        hospital: toNull(hospital),
+        specialty: toNull(specialty),
+        diagnosis: toNull(diagnosis),
+        icd_code: toNull(icdCode),
+        doctor: toNull(doctor),
+        notes: toNull(notes),
+      });
     } catch {
       setError("Lưu thất bại. Vui lòng thử lại.");
       setPending(false);
@@ -51,9 +105,9 @@ export function VisitForm({
     <form onSubmit={handleSubmit} className="space-y-4">
       <Field label="Thành viên" required>
         <select
-          name="profile_id"
           required
-          defaultValue={visit?.profile_id ?? defaultProfileId ?? ""}
+          value={profileId}
+          onChange={(e) => setProfileId(e.target.value)}
           className="input"
         >
           <option value="" disabled>
@@ -71,34 +125,86 @@ export function VisitForm({
       <Field label="Ngày khám" required>
         <input
           type="date"
-          name="visit_date"
           required
-          defaultValue={visit?.visit_date ?? ""}
+          value={visitDate}
+          onChange={(e) => setVisitDate(e.target.value)}
           className="input"
         />
       </Field>
 
       <Field label="Bệnh viện / Phòng khám">
-        <input name="hospital" defaultValue={visit?.hospital ?? ""} className="input" />
+        <Combobox
+          options={hospitalOptions}
+          value={hospital}
+          onChange={setHospital}
+          placeholder="— Chọn bệnh viện —"
+          searchPlaceholder="Tìm bệnh viện..."
+          allowCustom
+          customLabel="Nơi khám khác"
+        />
       </Field>
 
       <Field label="Chuyên khoa">
-        <input name="specialty" defaultValue={visit?.specialty ?? ""} className="input" />
+        <Combobox
+          options={specialtyOptions}
+          value={specialty}
+          onChange={setSpecialty}
+          placeholder="— Chọn chuyên khoa —"
+          searchPlaceholder="Tìm chuyên khoa..."
+          allowCustom
+          customLabel="Chuyên khoa khác"
+        />
       </Field>
 
-      <Field label="Chẩn đoán">
-        <input name="diagnosis" defaultValue={visit?.diagnosis ?? ""} className="input" />
+      <Field label="Chẩn đoán (gõ tên bệnh hoặc mã ICD-10)">
+        <Combobox
+          options={icdOptions}
+          value={icdCode || diagnosis}
+          onChange={(value, option) => {
+            if (option) {
+              // Picked from the ICD list: fill both name and code.
+              setDiagnosis(option.label);
+              setIcdCode(option.value);
+            } else {
+              // Free text: treat as the diagnosis name.
+              setDiagnosis(value);
+              setIcdCode("");
+            }
+          }}
+          placeholder="— Chọn hoặc nhập chẩn đoán —"
+          searchPlaceholder="VD: F32, trầm cảm, viêm họng..."
+          allowCustom
+          customLabel="Chẩn đoán khác"
+        />
+        <div className="mt-2 grid grid-cols-[7rem_1fr] gap-2">
+          <input
+            value={icdCode}
+            onChange={(e) => setIcdCode(e.target.value.toUpperCase())}
+            placeholder="Mã ICD"
+            className="input !py-2 text-sm"
+          />
+          <input
+            value={diagnosis}
+            onChange={(e) => setDiagnosis(e.target.value)}
+            placeholder="Tên chẩn đoán"
+            className="input !py-2 text-sm"
+          />
+        </div>
       </Field>
 
       <Field label="Bác sĩ">
-        <input name="doctor" defaultValue={visit?.doctor ?? ""} className="input" />
+        <input
+          value={doctor}
+          onChange={(e) => setDoctor(e.target.value)}
+          className="input"
+        />
       </Field>
 
       <Field label="Ghi chú">
         <textarea
-          name="notes"
           rows={3}
-          defaultValue={visit?.notes ?? ""}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
           className="input resize-none"
         />
       </Field>
@@ -106,11 +212,7 @@ export function VisitForm({
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       <div className="pt-2">
-        <button
-          type="submit"
-          disabled={pending}
-          className="flex items-center justify-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2.5 font-medium text-white transition hover:bg-brand-700 disabled:opacity-60"
-        >
+        <button type="submit" disabled={pending} className="btn-primary">
           {pending ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
@@ -119,22 +221,6 @@ export function VisitForm({
           Lưu
         </button>
       </div>
-
-      <style>{`
-        .input {
-          width: 100%;
-          border-radius: 0.5rem;
-          border: 1px solid rgb(209 213 219);
-          padding: 0.625rem 0.75rem;
-          font-size: 1rem;
-          outline: none;
-          background: white;
-        }
-        .input:focus {
-          border-color: rgb(59 130 246);
-          box-shadow: 0 0 0 2px rgb(219 234 254);
-        }
-      `}</style>
     </form>
   );
 }

@@ -7,7 +7,7 @@ export function TimelineCard({ visit }: { visit: VisitWithProfile }) {
   return (
     <Link
       href={`/visit/${visit.id}`}
-      className="block rounded-xl border border-gray-200 bg-white p-4 transition hover:border-brand-300 hover:shadow-sm"
+      className="card card-hover block p-4"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
@@ -15,9 +15,9 @@ export function TimelineCard({ visit }: { visit: VisitWithProfile }) {
             <span className="font-medium text-gray-700">
               {formatDate(visit.visit_date)}
             </span>
-            {visit.profiles && (
-              <span className="rounded-full bg-brand-50 px-2 py-0.5 font-medium text-brand-700">
-                {visit.profiles.full_name}
+            {visit.icd_code && (
+              <span className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-[11px] font-medium text-gray-600">
+                {visit.icd_code}
               </span>
             )}
           </div>
@@ -41,7 +41,7 @@ export function TimelineCard({ visit }: { visit: VisitWithProfile }) {
             )}
           </div>
         </div>
-        <ChevronRight className="mt-1 h-5 w-5 shrink-0 text-gray-300" />
+        <ChevronRight className="mt-1 h-5 w-5 shrink-0 text-gray-300 transition-transform duration-150 group-hover:translate-x-0.5" />
       </div>
     </Link>
   );
