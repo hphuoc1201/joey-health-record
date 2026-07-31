@@ -1,11 +1,26 @@
-import { redirect } from "next/navigation";
-import { Mail, ShieldCheck, LogOut, User as UserIcon } from "lucide-react";
-import { getSessionContext } from "@/lib/auth";
-import { signOut } from "@/app/(app)/actions";
+"use client";
 
-export default async function AccountPage() {
-  const session = await getSessionContext();
-  if (!session) redirect("/login");
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  Mail,
+  ShieldCheck,
+  LogOut,
+  User as UserIcon,
+  Loader2,
+} from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
+
+export default function AccountPage() {
+  const router = useRouter();
+  const { supabase, email, isAdmin } = useAuth();
+  const [signingOut, setSigningOut] = useState(false);
+
+  async function handleSignOut() {
+    setSigningOut(true);
+    await supabase.auth.signOut();
+    router.replace("/login");
+  }
 
   return (
     <div>
@@ -19,10 +34,10 @@ export default async function AccountPage() {
           <div className="min-w-0">
             <p className="flex items-center gap-1.5 truncate font-medium text-gray-900">
               <Mail className="h-4 w-4 text-gray-400" />
-              {session.email}
+              {email}
             </p>
             <p className="mt-0.5 text-sm">
-              {session.isAdmin ? (
+              {isAdmin ? (
                 <span className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700">
                   <ShieldCheck className="h-3 w-3" />
                   Quản trị viên
@@ -35,15 +50,18 @@ export default async function AccountPage() {
         </div>
       </div>
 
-      <form action={signOut} className="mt-4">
-        <button
-          type="submit"
-          className="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white py-3 font-medium text-gray-700 transition hover:bg-gray-50"
-        >
+      <button
+        onClick={handleSignOut}
+        disabled={signingOut}
+        className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white py-3 font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-60"
+      >
+        {signingOut ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
           <LogOut className="h-4 w-4" />
-          Đăng xuất
-        </button>
-      </form>
+        )}
+        Đăng xuất
+      </button>
     </div>
   );
 }

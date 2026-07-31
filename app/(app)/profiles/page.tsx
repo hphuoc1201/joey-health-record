@@ -1,28 +1,29 @@
-import { createClient } from "@/lib/supabase/server";
-import { getSessionContext } from "@/lib/auth";
-import { ProfilesManager } from "@/components/ProfilesManager";
-import type { Profile } from "@/lib/types";
+"use client";
 
-export default async function ProfilesPage() {
-  const session = await getSessionContext();
-  const supabase = await createClient();
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("*")
-    .order("created_at", { ascending: true });
+import { Loader2 } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
+import { useProfiles } from "@/lib/queries";
+import { ProfilesManager } from "@/components/ProfilesManager";
+
+export default function ProfilesPage() {
+  const { isAdmin } = useAuth();
+  const { data: profiles, isPending } = useProfiles();
 
   return (
     <div>
       <h1 className="mb-1 text-2xl font-bold">Hồ sơ thành viên</h1>
       <p className="mb-5 text-sm text-gray-500">
-        {session?.isAdmin
+        {isAdmin
           ? "Quản lý các thành viên trong gia đình."
           : "Những người có hồ sơ được chia sẻ với bạn."}
       </p>
-      <ProfilesManager
-        profiles={(profiles ?? []) as Profile[]}
-        isAdmin={session?.isAdmin ?? false}
-      />
+      {isPending ? (
+        <div className="flex justify-center py-16">
+          <Loader2 className="h-6 w-6 animate-spin text-brand-600" />
+        </div>
+      ) : (
+        <ProfilesManager profiles={profiles ?? []} isAdmin={isAdmin} />
+      )}
     </div>
   );
 }

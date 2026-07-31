@@ -1,28 +1,35 @@
+"use client";
+
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { ArrowLeft, UserPlus } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
-import { getSessionContext } from "@/lib/auth";
+import { Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ArrowLeft, UserPlus, Loader2 } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
+import { useProfiles, useSaveVisit } from "@/lib/queries";
 import { VisitForm } from "@/components/VisitForm";
-import { createVisit } from "@/app/(app)/actions";
-import type { Profile } from "@/lib/types";
 
-export default async function NewVisitPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ profile?: string }>;
-}) {
-  const session = await getSessionContext();
-  if (!session?.isAdmin) redirect("/");
+function NewVisit() {
+  const router = useRouter();
+  const { isAdmin, loading } = useAuth();
+  const params = useSearchParams();
+  const defaultProfileId = params.get("profile") ?? undefined;
+  const { data: profiles, isPending } = useProfiles();
+  const saveVisit = useSaveVisit();
 
-  const { profile } = await searchParams;
-  const supabase = await createClient();
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("*")
-    .order("created_at", { ascending: true });
+  if (!loading && !isAdmin) {
+    router.replace("/");
+    return null;
+  }
 
-  const list = (profiles ?? []) as Profile[];
+  if (isPending) {
+    return (
+      <div className="flex justify-center py-16">
+        <Loader2 className="h-6 w-6 animate-spin text-brand-600" />
+      </div>
+    );
+  }
+
+  const list = profiles ?? [];
 
   return (
     <div>
@@ -51,8 +58,23 @@ export default async function NewVisitPage({
           </Link>
         </div>
       ) : (
-        <VisitForm action={createVisit} profiles={list} defaultProfileId={profile} />
+        <VisitForm
+          onSubmit={async (values) => {
+            const id = await saveVisit.mutateAsync({ values });
+            router.replace(`/visit/${id}`);
+          }}
+          profiles={list}
+          defaultProfileId={defaultProfileId}
+        />
       )}
     </div>
+  );
+}
+
+export default function NewVisitPage() {
+  return (
+    <Suspense fallback={null}>
+      <NewVisit />
+    </Suspense>
   );
 }

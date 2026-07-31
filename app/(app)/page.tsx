@@ -1,44 +1,31 @@
+"use client";
+
 import Link from "next/link";
 import { Suspense } from "react";
-import { PlusCircle, CalendarClock } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
-import { getSessionContext } from "@/lib/auth";
+import { useSearchParams } from "next/navigation";
+import { PlusCircle, CalendarClock, Loader2 } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
+import { useProfiles, useVisits } from "@/lib/queries";
 import { TimelineCard } from "@/components/TimelineCard";
 import { MemberFilter } from "@/components/MemberFilter";
 import { formatMonthYear } from "@/lib/format";
-import type { Profile, VisitWithProfile } from "@/lib/types";
+import type { VisitWithProfile } from "@/lib/types";
 
-export default async function TimelinePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ profile?: string }>;
-}) {
-  const { profile: profileFilter } = await searchParams;
-  const session = await getSessionContext();
-  const supabase = await createClient();
+function Timeline() {
+  const { isAdmin } = useAuth();
+  const params = useSearchParams();
+  const profileFilter = params.get("profile") ?? undefined;
 
-  // RLS ensures only accessible profiles/visits come back.
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("*")
-    .order("created_at", { ascending: true });
+  const { data: profiles } = useProfiles();
+  const { data: visits, isPending } = useVisits(profileFilter);
 
-  let query = supabase
-    .from("visits")
-    .select("*, profiles(id, full_name, relationship)")
-    .order("visit_date", { ascending: false });
-
-  if (profileFilter) query = query.eq("profile_id", profileFilter);
-
-  const { data: visits } = await query;
-
-  const groups = groupByMonth((visits ?? []) as VisitWithProfile[]);
+  const groups = groupByMonth(visits ?? []);
 
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-2xl font-bold">Dòng thời gian</h1>
-        {session?.isAdmin && (
+        {isAdmin && (
           <Link
             href="/visit/new"
             className="flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-brand-700"
@@ -49,12 +36,14 @@ export default async function TimelinePage({
         )}
       </div>
 
-      <Suspense fallback={null}>
-        <MemberFilter profiles={(profiles ?? []) as Profile[]} />
-      </Suspense>
+      <MemberFilter profiles={profiles ?? []} />
 
-      {groups.length === 0 ? (
-        <EmptyState isAdmin={session?.isAdmin ?? false} />
+      {isPending ? (
+        <div className="flex justify-center py-16">
+          <Loader2 className="h-6 w-6 animate-spin text-brand-600" />
+        </div>
+      ) : groups.length === 0 ? (
+        <EmptyState isAdmin={isAdmin} />
       ) : (
         <div className="space-y-6">
           {groups.map((group) => (
@@ -72,6 +61,14 @@ export default async function TimelinePage({
         </div>
       )}
     </div>
+  );
+}
+
+export default function TimelinePage() {
+  return (
+    <Suspense fallback={null}>
+      <Timeline />
+    </Suspense>
   );
 }
 

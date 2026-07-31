@@ -48,3 +48,14 @@ export interface AccessGrant {
   granted_email: string;
   created_at: string;
 }
+
+// A document paired with a short-lived signed URL for viewing/downloading.
+export interface ClientDoc {
+  id: string;
+  category: DocumentCategory;
+  file_name: string;
+  mime_type: string | null;
+  size_bytes: number | null;
+  storage_path: string;
+  url: string;
+}

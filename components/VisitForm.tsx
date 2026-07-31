@@ -1,40 +1,54 @@
 "use client";
 
-import { useFormStatus } from "react-dom";
+import { useState } from "react";
 import { Loader2, Save } from "lucide-react";
 import type { Profile, Visit } from "@/lib/types";
+import type { VisitInput } from "@/lib/queries";
 
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="flex items-center justify-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2.5 font-medium text-white transition hover:bg-brand-700 disabled:opacity-60"
-    >
-      {pending ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
-      ) : (
-        <Save className="h-4 w-4" />
-      )}
-      Lưu
-    </button>
-  );
+function emptyToNull(v: FormDataEntryValue | null): string | null {
+  const s = typeof v === "string" ? v.trim() : "";
+  return s.length > 0 ? s : null;
 }
 
 export function VisitForm({
-  action,
+  onSubmit,
   profiles,
   visit,
   defaultProfileId,
 }: {
-  action: (formData: FormData) => Promise<void>;
+  onSubmit: (values: VisitInput) => Promise<void>;
   profiles: Profile[];
   visit?: Visit;
   defaultProfileId?: string;
 }) {
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+    const fd = new FormData(e.currentTarget);
+    const values: VisitInput = {
+      profile_id: String(fd.get("profile_id") ?? ""),
+      visit_date: String(fd.get("visit_date") ?? ""),
+      hospital: emptyToNull(fd.get("hospital")),
+      specialty: emptyToNull(fd.get("specialty")),
+      diagnosis: emptyToNull(fd.get("diagnosis")),
+      doctor: emptyToNull(fd.get("doctor")),
+      notes: emptyToNull(fd.get("notes")),
+    };
+    if (!values.profile_id || !values.visit_date) return;
+    setPending(true);
+    try {
+      await onSubmit(values);
+    } catch {
+      setError("Lưu thất bại. Vui lòng thử lại.");
+      setPending(false);
+    }
+  }
+
   return (
-    <form action={action} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <Field label="Thành viên" required>
         <select
           name="profile_id"
@@ -89,8 +103,21 @@ export function VisitForm({
         />
       </Field>
 
+      {error && <p className="text-sm text-red-600">{error}</p>}
+
       <div className="pt-2">
-        <SubmitButton />
+        <button
+          type="submit"
+          disabled={pending}
+          className="flex items-center justify-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2.5 font-medium text-white transition hover:bg-brand-700 disabled:opacity-60"
+        >
+          {pending ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Save className="h-4 w-4" />
+          )}
+          Lưu
+        </button>
       </div>
 
       <style>{`

@@ -4,27 +4,20 @@ import { useState } from "react";
 import clsx from "clsx";
 import { FileText, ImageIcon, ExternalLink } from "lucide-react";
 import { CATEGORIES } from "@/lib/categories";
-import type { DocumentCategory } from "@/lib/types";
+import type { ClientDoc, DocumentCategory } from "@/lib/types";
 import { formatBytes } from "@/lib/format";
 import { UploadForm } from "./UploadForm";
 import { DeleteButton } from "./DeleteButton";
-import { deleteDocument } from "@/app/(app)/actions";
-
-export interface ClientDoc {
-  id: string;
-  category: DocumentCategory;
-  file_name: string;
-  mime_type: string | null;
-  size_bytes: number | null;
-  url: string;
-}
+import { useDeleteDocument } from "@/lib/queries";
 
 export function VisitTabs({
   visitId,
+  profileId,
   docs,
   isAdmin,
 }: {
   visitId: string;
+  profileId: string;
   docs: ClientDoc[];
   isAdmin: boolean;
 }) {
@@ -69,7 +62,7 @@ export function VisitTabs({
 
       {isAdmin && (
         <div className="mb-4">
-          <UploadForm visitId={visitId} category={active} />
+          <UploadForm visitId={visitId} profileId={profileId} category={active} />
         </div>
       )}
 
@@ -103,6 +96,7 @@ function DocCard({
   isAdmin: boolean;
 }) {
   const isImage = (doc.mime_type ?? "").startsWith("image/");
+  const deleteDocument = useDeleteDocument();
 
   return (
     <li className="group relative overflow-hidden rounded-lg border border-gray-200 bg-white">
@@ -138,7 +132,13 @@ function DocCard({
         <div className="absolute right-1.5 top-1.5">
           <div className="rounded-md bg-white/90 shadow-sm">
             <DeleteButton
-              action={deleteDocument.bind(null, doc.id, visitId)}
+              action={async () => {
+                await deleteDocument.mutateAsync({
+                  documentId: doc.id,
+                  storagePath: doc.storage_path,
+                  visitId,
+                });
+              }}
               confirmText={`Xóa tệp "${doc.file_name}"?`}
             />
           </div>

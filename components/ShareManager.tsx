@@ -1,21 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { useFormStatus } from "react-dom";
 import { Mail, UserPlus, Loader2, X, ChevronDown, Lock } from "lucide-react";
 import clsx from "clsx";
-import { grantAccess, revokeAccess } from "@/app/(app)/actions";
+import {
+  useGrantAccess,
+  useRevokeAccess,
+  type ShareVisit,
+} from "@/lib/queries";
 import { formatDate } from "@/lib/format";
-import type { AccessGrant } from "@/lib/types";
-
-export interface ShareVisit {
-  id: string;
-  visit_date: string;
-  diagnosis: string | null;
-  hospital: string | null;
-  profiles: { full_name: string } | null;
-  access_grants: AccessGrant[];
-}
 
 export function ShareManager({ visits }: { visits: ShareVisit[] }) {
   if (visits.length === 0) {
@@ -95,59 +88,65 @@ function ShareCard({ visit }: { visit: ShareVisit }) {
 }
 
 function RevokeButton({ grantId, visitId }: { grantId: string; visitId: string }) {
-  const [pending, setPending] = useState(false);
+  const revoke = useRevokeAccess();
   return (
     <button
       type="button"
-      disabled={pending}
-      onClick={async () => {
-        setPending(true);
-        await revokeAccess(grantId, visitId);
-        setPending(false);
-      }}
+      disabled={revoke.isPending}
+      onClick={() => revoke.mutate({ grantId, visitId })}
       className="flex h-6 w-6 items-center justify-center rounded text-gray-400 hover:bg-red-50 hover:text-red-600"
       title="Thu hồi quyền"
     >
-      {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <X className="h-4 w-4" />}
-    </button>
-  );
-}
-
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="flex shrink-0 items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-brand-700 disabled:opacity-60"
-    >
-      {pending ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
+      {revoke.isPending ? (
+        <Loader2 className="h-3.5 w-3.5 animate-spin" />
       ) : (
-        <UserPlus className="h-4 w-4" />
+        <X className="h-4 w-4" />
       )}
-      Chia sẻ
     </button>
   );
 }
 
 function AddEmailForm({ visitId }: { visitId: string }) {
+  const grant = useGrantAccess();
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    try {
+      await grant.mutateAsync({ visitId, email: email.trim().toLowerCase() });
+      setEmail("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không thể chia sẻ.");
+    }
+  }
+
   return (
-    <form
-      action={async (formData) => {
-        await grantAccess(formData);
-      }}
-      className="flex gap-2"
-    >
-      <input type="hidden" name="visit_id" value={visitId} />
-      <input
-        type="email"
-        name="email"
-        required
-        placeholder="email@gmail.com"
-        className="min-w-0 flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
-      />
-      <SubmitButton />
+    <form onSubmit={handleSubmit}>
+      <div className="flex gap-2">
+        <input
+          type="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="email@gmail.com"
+          className="min-w-0 flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+        />
+        <button
+          type="submit"
+          disabled={grant.isPending}
+          className="flex shrink-0 items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-brand-700 disabled:opacity-60"
+        >
+          {grant.isPending ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <UserPlus className="h-4 w-4" />
+          )}
+          Chia sẻ
+        </button>
+      </div>
+      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
     </form>
   );
 }

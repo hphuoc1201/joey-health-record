@@ -1,29 +1,51 @@
-import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
-import { getSessionContext } from "@/lib/auth";
-import { VisitForm } from "@/components/VisitForm";
-import { updateVisit } from "@/app/(app)/actions";
-import type { Profile, Visit } from "@/lib/types";
+"use client";
 
-export default async function EditVisitPage({
+import Link from "next/link";
+import { use } from "react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, Loader2 } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
+import { useProfiles, useVisit, useSaveVisit } from "@/lib/queries";
+import { VisitForm } from "@/components/VisitForm";
+
+export default function EditVisitPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const session = await getSessionContext();
-  if (!session?.isAdmin) redirect("/");
+  const { id } = use(params);
+  const router = useRouter();
+  const { isAdmin, loading } = useAuth();
+  const { data, isPending } = useVisit(id);
+  const { data: profiles } = useProfiles();
+  const saveVisit = useSaveVisit();
 
-  const { id } = await params;
-  const supabase = await createClient();
+  if (!loading && !isAdmin) {
+    router.replace("/");
+    return null;
+  }
 
-  const [{ data: visit }, { data: profiles }] = await Promise.all([
-    supabase.from("visits").select("*").eq("id", id).maybeSingle<Visit>(),
-    supabase.from("profiles").select("*").order("created_at", { ascending: true }),
-  ]);
+  if (isPending) {
+    return (
+      <div className="flex justify-center py-16">
+        <Loader2 className="h-6 w-6 animate-spin text-brand-600" />
+      </div>
+    );
+  }
 
-  if (!visit) notFound();
+  if (!data) {
+    return (
+      <div className="mt-10 rounded-xl border border-dashed border-gray-300 bg-white px-6 py-12 text-center">
+        <p className="font-medium text-gray-700">Không tìm thấy lần khám.</p>
+        <Link
+          href="/"
+          className="mt-4 inline-block rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+        >
+          Về trang chủ
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -38,9 +60,12 @@ export default async function EditVisitPage({
       <h1 className="mb-5 text-2xl font-bold">Sửa lần khám</h1>
 
       <VisitForm
-        action={updateVisit.bind(null, id)}
-        profiles={(profiles ?? []) as Profile[]}
-        visit={visit}
+        onSubmit={async (values) => {
+          await saveVisit.mutateAsync({ id, values });
+          router.replace(`/visit/${id}`);
+        }}
+        profiles={profiles ?? []}
+        visit={data.visit}
       />
     </div>
   );

@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { use } from "react";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Building2,
@@ -8,45 +11,50 @@ import {
   Pencil,
   CalendarDays,
   FileHeart,
+  Loader2,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { getSessionContext } from "@/lib/auth";
-import { VisitTabs, type ClientDoc } from "@/components/VisitTabs";
+import { useAuth } from "@/lib/auth-context";
+import { useVisit, useDeleteVisit } from "@/lib/queries";
+import { VisitTabs } from "@/components/VisitTabs";
 import { DeleteButton } from "@/components/DeleteButton";
-import { deleteVisit } from "@/app/(app)/actions";
 import { formatDate } from "@/lib/format";
-import type { HealthDocument, VisitWithProfile } from "@/lib/types";
 
-const SIGNED_URL_TTL = 60 * 60; // 1 hour
-
-export default async function VisitDetailPage({
+export default function VisitDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;
-  const session = await getSessionContext();
-  const supabase = await createClient();
+  const { id } = use(params);
+  const router = useRouter();
+  const { isAdmin } = useAuth();
+  const { data, isPending } = useVisit(id);
+  const deleteVisit = useDeleteVisit();
 
-  // RLS returns the visit only if the user is admin or has been granted it.
-  const { data: visit } = await supabase
-    .from("visits")
-    .select("*, profiles(id, full_name, relationship)")
-    .eq("id", id)
-    .maybeSingle<VisitWithProfile>();
+  if (isPending) {
+    return (
+      <div className="flex justify-center py-16">
+        <Loader2 className="h-6 w-6 animate-spin text-brand-600" />
+      </div>
+    );
+  }
 
-  if (!visit) notFound();
+  if (!data) {
+    return (
+      <div className="mt-10 rounded-xl border border-dashed border-gray-300 bg-white px-6 py-12 text-center">
+        <p className="font-medium text-gray-700">
+          Không tìm thấy lần khám, hoặc bạn không có quyền xem.
+        </p>
+        <Link
+          href="/"
+          className="mt-4 inline-block rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+        >
+          Về trang chủ
+        </Link>
+      </div>
+    );
+  }
 
-  const { data: documents } = await supabase
-    .from("documents")
-    .select("*")
-    .eq("visit_id", id)
-    .order("uploaded_at", { ascending: true });
-
-  // Generate short-lived signed URLs. RLS already filtered `documents` to what
-  // this user may see, so signing them here is safe.
-  const docs = await signDocuments((documents ?? []) as HealthDocument[]);
+  const { visit, docs } = data;
 
   return (
     <div>
@@ -71,7 +79,7 @@ export default async function VisitDetailPage({
               {visit.diagnosis || "Chưa có chẩn đoán"}
             </h1>
           </div>
-          {session?.isAdmin && (
+          {isAdmin && (
             <div className="flex shrink-0 items-center gap-2">
               <Link
                 href={`/visit/${visit.id}/edit`}
@@ -100,12 +108,20 @@ export default async function VisitDetailPage({
       </div>
 
       {/* Documents by category */}
-      <VisitTabs visitId={visit.id} docs={docs} isAdmin={session?.isAdmin ?? false} />
+      <VisitTabs
+        visitId={visit.id}
+        profileId={visit.profile_id}
+        docs={docs}
+        isAdmin={isAdmin}
+      />
 
-      {session?.isAdmin && (
+      {isAdmin && (
         <div className="mt-8 border-t border-gray-100 pt-5">
           <DeleteButton
-            action={deleteVisit.bind(null, visit.id)}
+            action={async () => {
+              await deleteVisit.mutateAsync(visit.id);
+              router.replace("/");
+            }}
             confirmText="Xóa lần khám này và toàn bộ tệp đính kèm? Không thể hoàn tác."
             label="Xóa lần khám"
             variant="button"
@@ -135,24 +151,4 @@ function Detail({
       </div>
     </div>
   );
-}
-
-async function signDocuments(documents: HealthDocument[]): Promise<ClientDoc[]> {
-  if (documents.length === 0) return [];
-  const admin = createAdminClient();
-  const { data: signed } = await admin.storage
-    .from("health-docs")
-    .createSignedUrls(
-      documents.map((d) => d.storage_path),
-      SIGNED_URL_TTL,
-    );
-
-  return documents.map((doc, i) => ({
-    id: doc.id,
-    category: doc.category,
-    file_name: doc.file_name,
-    mime_type: doc.mime_type,
-    size_bytes: doc.size_bytes,
-    url: signed?.[i]?.signedUrl ?? "#",
-  }));
 }

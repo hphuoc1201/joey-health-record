@@ -1,17 +1,20 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
-import { getSessionContext } from "@/lib/auth";
-import { ShareManager, type ShareVisit } from "@/components/ShareManager";
+"use client";
 
-export default async function SharePage() {
-  const session = await getSessionContext();
-  if (!session?.isAdmin) redirect("/");
+import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
+import { useShareVisits } from "@/lib/queries";
+import { ShareManager } from "@/components/ShareManager";
 
-  const supabase = await createClient();
-  const { data: visits } = await supabase
-    .from("visits")
-    .select("id, visit_date, diagnosis, hospital, profiles(full_name), access_grants(*)")
-    .order("visit_date", { ascending: false });
+export default function SharePage() {
+  const router = useRouter();
+  const { isAdmin, loading } = useAuth();
+  const { data: visits, isPending } = useShareVisits();
+
+  if (!loading && !isAdmin) {
+    router.replace("/");
+    return null;
+  }
 
   return (
     <div>
@@ -20,7 +23,13 @@ export default async function SharePage() {
         Thêm email để cho phép người khác xem (chỉ đọc) một lần khám. Người được
         thêm sẽ đăng nhập bằng chính email đó và nhận mã xác thực.
       </p>
-      <ShareManager visits={(visits ?? []) as unknown as ShareVisit[]} />
+      {isPending ? (
+        <div className="flex justify-center py-16">
+          <Loader2 className="h-6 w-6 animate-spin text-brand-600" />
+        </div>
+      ) : (
+        <ShareManager visits={visits ?? []} />
+      )}
     </div>
   );
 }

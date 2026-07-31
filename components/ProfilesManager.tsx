@@ -1,10 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useFormStatus } from "react-dom";
 import { UserPlus, Pencil, X, Loader2, Save, User as UserIcon } from "lucide-react";
 import type { Profile } from "@/lib/types";
-import { createProfile, updateProfile, deleteProfile } from "@/app/(app)/actions";
+import {
+  useSaveProfile,
+  useDeleteProfile,
+  type ProfileInput,
+} from "@/lib/queries";
 import { DeleteButton } from "./DeleteButton";
 import { formatDate } from "@/lib/format";
 
@@ -32,7 +35,7 @@ export function ProfilesManager({
                   <X className="h-5 w-5" />
                 </button>
               </div>
-              <ProfileFields action={createProfile} />
+              <ProfileFields onSaved={() => setAdding(false)} />
             </div>
           ) : (
             <button
@@ -65,6 +68,7 @@ export function ProfilesManager({
 
 function ProfileCard({ profile, isAdmin }: { profile: Profile; isAdmin: boolean }) {
   const [editing, setEditing] = useState(false);
+  const deleteProfile = useDeleteProfile();
 
   if (editing) {
     return (
@@ -78,10 +82,7 @@ function ProfileCard({ profile, isAdmin }: { profile: Profile; isAdmin: boolean 
             <X className="h-5 w-5" />
           </button>
         </div>
-        <ProfileFields
-          action={updateProfile.bind(null, profile.id)}
-          profile={profile}
-        />
+        <ProfileFields profile={profile} onSaved={() => setEditing(false)} />
       </li>
     );
   }
@@ -109,7 +110,9 @@ function ProfileCard({ profile, isAdmin }: { profile: Profile; isAdmin: boolean 
             <Pencil className="h-4 w-4" />
           </button>
           <DeleteButton
-            action={deleteProfile.bind(null, profile.id)}
+            action={async () => {
+              await deleteProfile.mutateAsync(profile.id);
+            }}
             confirmText={`Xóa hồ sơ "${profile.full_name}" và tất cả lần khám của người này?`}
           />
         </div>
@@ -118,33 +121,42 @@ function ProfileCard({ profile, isAdmin }: { profile: Profile; isAdmin: boolean 
   );
 }
 
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="flex items-center justify-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-700 disabled:opacity-60"
-    >
-      {pending ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
-      ) : (
-        <Save className="h-4 w-4" />
-      )}
-      Lưu
-    </button>
-  );
-}
-
 function ProfileFields({
-  action,
   profile,
+  onSaved,
 }: {
-  action: (formData: FormData) => Promise<void>;
   profile?: Profile;
+  onSaved: () => void;
 }) {
+  const saveProfile = useSaveProfile();
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+    const fd = new FormData(e.currentTarget);
+    const str = (k: string) => {
+      const v = String(fd.get(k) ?? "").trim();
+      return v.length > 0 ? v : null;
+    };
+    const values: ProfileInput = {
+      full_name: String(fd.get("full_name") ?? "").trim(),
+      relationship: str("relationship"),
+      dob: str("dob"),
+      gender: str("gender"),
+      notes: str("notes"),
+    };
+    if (!values.full_name) return;
+    try {
+      await saveProfile.mutateAsync({ id: profile?.id, values });
+      onSaved();
+    } catch {
+      setError("Lưu thất bại. Vui lòng thử lại.");
+    }
+  }
+
   return (
-    <form action={action} className="space-y-3">
+    <form onSubmit={handleSubmit} className="space-y-3">
       <input
         name="full_name"
         required
@@ -186,7 +198,19 @@ function ProfileFields({
         defaultValue={profile?.notes ?? ""}
         className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-base outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
       />
-      <SubmitButton />
+      {error && <p className="text-sm text-red-600">{error}</p>}
+      <button
+        type="submit"
+        disabled={saveProfile.isPending}
+        className="flex items-center justify-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-700 disabled:opacity-60"
+      >
+        {saveProfile.isPending ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Save className="h-4 w-4" />
+        )}
+        Lưu
+      </button>
     </form>
   );
 }
