@@ -75,9 +75,16 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-brand-700 via-brand-600 to-brand-800 md:grid md:grid-cols-2 md:bg-none">
+    <main className="relative min-h-screen overflow-hidden bg-gradient-to-br from-brand-700 via-brand-600 to-brand-800 md:grid md:grid-cols-2 md:bg-none">
+      {/* Mobile: family photo as full background (falls back to gradient). */}
+      <div
+        className="absolute inset-0 bg-cover bg-center md:hidden"
+        style={{ backgroundImage: "url(/login.jpg)" }}
+      />
+      <div className="absolute inset-0 bg-brand-900/55 md:hidden" />
+
       {/* Form side */}
-      <div className="flex min-h-screen items-center justify-center p-4 md:bg-white">
+      <div className="relative z-10 flex min-h-screen items-center justify-center p-4 md:bg-white">
         <div className="w-full max-w-sm rounded-3xl bg-white p-7 shadow-2xl md:rounded-none md:p-0 md:shadow-none">
           <div className="mb-8">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -86,7 +93,7 @@ export default function LoginPage() {
             <p className="mt-1 text-sm text-gray-500">
               {DEV_LOGIN
                 ? "Chế độ thử nghiệm — nhập email để vào."
-                : "Nhập email để nhận mã xác thực."}
+                : "Lưu hồ sơ khám bệnh & theo dõi bảo hiểm cho cả gia đình."}
             </p>
           </div>
 
@@ -126,30 +133,36 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Brand side (desktop) */}
-      <div className="relative hidden overflow-hidden bg-gradient-to-br from-brand-700 via-brand-600 to-brand-800 md:flex md:flex-col md:justify-between md:p-10 md:text-white">
-        <div className="pointer-events-none absolute -right-16 -top-16 h-72 w-72 rounded-full bg-white/10 blur-2xl" />
-        <div className="pointer-events-none absolute -bottom-20 -left-10 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
-        <div className="relative flex items-center gap-2 font-semibold">
-          <HeartPulse className="h-5 w-5" />
-          Hồ sơ sức khỏe
-        </div>
-        <div className="relative">
-          <h2 className="text-3xl font-bold leading-snug">
-            Lưu giữ hồ sơ khám bệnh
-            <br />
-            của cả gia đình, an toàn.
-          </h2>
-          <p className="mt-4 max-w-md text-white/80">
-            Ghi lại từng lần khám, đính kèm kết quả xét nghiệm, toa thuốc và hóa
-            đơn. Chia sẻ an toàn cho người thân, tải nhanh khi cần đi bảo hiểm.
-          </p>
-        </div>
-        <div className="relative flex items-center gap-3 text-sm text-white/70">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15">
-            🔒
-          </span>
-          Dữ liệu được bảo vệ bằng phân quyền chặt chẽ ở tầng cơ sở dữ liệu.
+      {/* Brand side (desktop): family photo with a readable gradient overlay. */}
+      <div className="relative hidden overflow-hidden bg-gradient-to-br from-brand-700 via-brand-600 to-brand-800 md:block">
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: "url(/login.jpg)" }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-brand-800/90 via-brand-700/40 to-brand-600/10" />
+        <div className="relative flex h-full flex-col justify-between p-10 text-white">
+          <div className="flex items-center gap-2 font-semibold">
+            <HeartPulse className="h-5 w-5" />
+            Hồ sơ sức khỏe
+          </div>
+          <div>
+            <h2 className="text-3xl font-bold leading-snug">
+              Lưu hồ sơ, theo dõi sức khỏe
+              <br />
+              và claim bảo hiểm — cho cả nhà.
+            </h2>
+            <p className="mt-4 max-w-md text-white/85">
+              Ghi lại mỗi lần khám cùng kết quả xét nghiệm, toa thuốc và hóa đơn.
+              Theo dõi diễn tiến qua từng năm, biết ngay lần nào đã claim bảo
+              hiểm — lần nào chưa, và tải giấy tờ gửi bảo hiểm chỉ trong vài giây.
+            </p>
+          </div>
+          <div className="flex items-center gap-3 text-sm text-white/80">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15">
+              🔒
+            </span>
+            Dữ liệu bảo mật, phân quyền chặt chẽ ngay ở tầng cơ sở dữ liệu.
+          </div>
         </div>
       </div>
     </main>
