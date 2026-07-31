@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 
 export interface SessionContext {
@@ -9,7 +10,10 @@ export interface SessionContext {
 // Returns the current user's session context, or null if not logged in.
 // Admin status is read from the `admins` table (RLS lets a user see only
 // their own row), keeping the app and database in agreement.
-export async function getSessionContext(): Promise<SessionContext | null> {
+//
+// Wrapped in React `cache()` so the layout and page in a single render pass
+// share one result instead of each re-hitting Supabase.
+export const getSessionContext = cache(async (): Promise<SessionContext | null> => {
   const supabase = await createClient();
   const {
     data: { user },
@@ -29,4 +33,4 @@ export async function getSessionContext(): Promise<SessionContext | null> {
     email,
     isAdmin: Boolean(adminRow),
   };
-}
+});
