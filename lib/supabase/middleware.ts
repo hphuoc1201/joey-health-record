@@ -11,15 +11,19 @@ import { NextResponse, type NextRequest } from "next/server";
 // decide where to send the browser. It is not an authorization check and does
 // not need to be: Row Level Security in the database is what actually protects
 // the data, and AuthProvider verifies the real session on the client.
+// Matches only the session cookie: "sb-<ref>-auth-token", plus the ".0"/".1"
+// chunks Supabase splits it into when it grows large.
+//
+// Must not be a substring test: starting an OTP sign-in writes
+// "sb-<ref>-auth-token-code-verifier", which is PKCE scratch data, not a
+// session. Treating it as one bounced the user off /verify before they could
+// enter their code.
+const SESSION_COOKIE = /^sb-.+-auth-token(\.\d+)?$/;
+
 function hasSessionCookie(request: NextRequest): boolean {
   return request.cookies
     .getAll()
-    .some(
-      (c) =>
-        c.name.startsWith("sb-") &&
-        c.name.includes("auth-token") &&
-        c.value.length > 0,
-    );
+    .some((c) => SESSION_COOKIE.test(c.name) && c.value.length > 0);
 }
 
 export async function updateSession(request: NextRequest) {
