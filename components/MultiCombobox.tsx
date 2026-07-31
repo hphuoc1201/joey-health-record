@@ -20,6 +20,7 @@ export function MultiCombobox({
   searchPlaceholder = "Tìm kiếm...",
   customLabel = "Thêm",
   allowCustom = true,
+  showCode = true,
 }: {
   options: ComboOption[];
   items: MultiItem[];
@@ -28,6 +29,9 @@ export function MultiCombobox({
   searchPlaceholder?: string;
   customLabel?: string;
   allowCustom?: boolean;
+  /** Show each chip's value as a code badge (e.g. an ICD code). Off for
+   *  things like patient ids where the value is just an internal id. */
+  showCode?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -82,7 +86,7 @@ export function MultiCombobox({
               key={`${it.value}|${it.label}|${idx}`}
               className="flex items-center gap-1.5 rounded-lg bg-brand-50 py-1 pl-2 pr-1 text-sm text-brand-700"
             >
-              {it.value && (
+              {showCode && it.value && (
                 <span className="rounded bg-white/70 px-1 font-mono text-[11px]">
                   {it.value}
                 </span>

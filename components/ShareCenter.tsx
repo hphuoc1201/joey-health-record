@@ -140,6 +140,7 @@ export function ShareCenter() {
               items={patients}
               onChange={setPatients}
               allowCustom={false}
+              showCode={false}
               placeholder="Chọn thành viên..."
               searchPlaceholder="Tìm thành viên..."
             />
