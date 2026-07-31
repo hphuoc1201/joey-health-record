@@ -81,6 +81,31 @@ export function ShareCenter() {
     }
   }
 
+  // Merge managers + guests into one row per email for the overview table.
+  const rows = useMemo(() => {
+    const map = new Map<
+      string,
+      {
+        email: string;
+        isManager: boolean;
+        grants: { id: string; profile_id: string; full_name: string | null }[];
+      }
+    >();
+    for (const g of guestsQ.data ?? []) {
+      map.set(g.email, { email: g.email, isManager: false, grants: g.grants });
+    }
+    for (const m of managersQ.data ?? []) {
+      const ex = map.get(m.email);
+      if (ex) ex.isManager = true;
+      else map.set(m.email, { email: m.email, isManager: true, grants: [] });
+    }
+    return Array.from(map.values()).sort((a, b) =>
+      a.email.localeCompare(b.email),
+    );
+  }, [guestsQ.data, managersQ.data]);
+
+  const listPending = guestsQ.isPending || (isAdmin && managersQ.isPending);
+
   if (profilesQ.error) {
     return (
       <ErrorState error={profilesQ.error} onRetry={() => profilesQ.refetch()} />
@@ -157,86 +182,100 @@ export function ShareCenter() {
         </button>
       </form>
 
-      {/* Guests */}
+      {/* Overview table */}
       <section>
-        <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-gray-400">
+        <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-600">
           <Users className="h-4 w-4" />
-          Khách (chỉ xem)
+          Đang chia sẻ với {rows.length} người
         </h2>
-        {guestsQ.isPending ? (
+
+        {listPending ? (
           <Spinner />
-        ) : (guestsQ.data ?? []).length === 0 ? (
-          <Empty text="Chưa chia sẻ cho khách nào." />
+        ) : rows.length === 0 ? (
+          <Empty text="Chưa chia sẻ cho ai." />
         ) : (
-          <ul className="space-y-3">
-            {guestsQ.data!.map((g) => (
-              <li key={g.email} className="card p-4">
-                <p className="mb-2 flex items-center gap-2 font-medium text-gray-900">
-                  <Mail className="h-4 w-4 text-gray-400" />
-                  {g.email}
-                </p>
-                <ul className="flex flex-wrap gap-2">
-                  {g.grants.map((grant) => (
-                    <li
-                      key={grant.id}
-                      className="flex items-center gap-1.5 rounded-lg bg-gray-100 py-1 pl-2.5 pr-1 text-sm text-gray-700"
-                    >
-                      {grant.full_name ?? "—"}
-                      <button
-                        type="button"
-                        disabled={removeGuest.isPending}
-                        onClick={() => removeGuest.mutate(grant.id)}
-                        className="flex h-5 w-5 items-center justify-center rounded text-gray-400 transition-colors hover:bg-white hover:text-red-600"
-                        title="Thu hồi"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
-                    </li>
+          <div className="card overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100 bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
+                    <th className="px-4 py-3 font-medium">Email</th>
+                    <th className="px-4 py-3 font-medium">Vai trò</th>
+                    <th className="px-4 py-3 font-medium">Xem được hồ sơ của</th>
+                    <th className="px-4 py-3" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {rows.map((r) => (
+                    <tr key={r.email} className="align-top">
+                      <td className="px-4 py-3">
+                        <span className="flex items-center gap-2 font-medium text-gray-800">
+                          <Mail className="h-4 w-4 shrink-0 text-gray-400" />
+                          <span className="min-w-0 break-all">{r.email}</span>
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        {r.isManager ? (
+                          <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700">
+                            <ShieldCheck className="h-3 w-3" />
+                            Người quản lý
+                          </span>
+                        ) : (
+                          <span className="whitespace-nowrap rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+                            Khách (chỉ xem)
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {r.isManager && r.grants.length === 0 ? (
+                          <span className="text-gray-500">Gia đình họ tự quản lý</span>
+                        ) : (
+                          <div className="flex flex-wrap gap-1.5">
+                            {r.isManager && (
+                              <span className="rounded-md bg-gray-50 px-2 py-1 text-xs text-gray-500">
+                                Gia đình của họ
+                              </span>
+                            )}
+                            {r.grants.map((g) => (
+                              <span
+                                key={g.id}
+                                className="flex items-center gap-1 rounded-md bg-gray-100 py-1 pl-2 pr-1 text-xs text-gray-700"
+                              >
+                                {g.full_name ?? "—"}
+                                <button
+                                  type="button"
+                                  disabled={removeGuest.isPending}
+                                  onClick={() => removeGuest.mutate(g.id)}
+                                  className="flex h-4 w-4 items-center justify-center rounded text-gray-400 hover:bg-white hover:text-red-600"
+                                  title="Thu hồi bệnh nhân này"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {r.isManager && isAdmin && (
+                          <button
+                            type="button"
+                            disabled={removeManager.isPending}
+                            onClick={() => removeManager.mutate(r.email)}
+                            className="whitespace-nowrap rounded-lg px-2 py-1 text-xs font-medium text-red-600 transition-colors hover:bg-red-50"
+                          >
+                            Gỡ quản lý
+                          </button>
+                        )}
+                      </td>
+                    </tr>
                   ))}
-                </ul>
-              </li>
-            ))}
-          </ul>
+                </tbody>
+              </table>
+            </div>
+          </div>
         )}
       </section>
-
-      {/* Managers (admin only) */}
-      {isAdmin && (
-        <section>
-          <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-gray-400">
-            <ShieldCheck className="h-4 w-4" />
-            Người quản lý
-          </h2>
-          {managersQ.isPending ? (
-            <Spinner />
-          ) : (managersQ.data ?? []).length === 0 ? (
-            <Empty text="Chưa có người quản lý nào." />
-          ) : (
-            <ul className="space-y-2">
-              {managersQ.data!.map((m) => (
-                <li
-                  key={m.email}
-                  className="card flex items-center gap-2 p-3 text-sm"
-                >
-                  <Mail className="h-4 w-4 shrink-0 text-gray-400" />
-                  <span className="min-w-0 flex-1 truncate text-gray-700">
-                    {m.email}
-                  </span>
-                  <button
-                    type="button"
-                    disabled={removeManager.isPending}
-                    onClick={() => removeManager.mutate(m.email)}
-                    className="flex h-6 w-6 items-center justify-center rounded text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600"
-                    title="Gỡ quyền quản lý"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      )}
     </div>
   );
 }

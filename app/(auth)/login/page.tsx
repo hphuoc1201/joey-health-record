@@ -75,57 +75,83 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center px-4">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-600 text-white">
-            <HeartPulse className="h-7 w-7" />
+    <main className="min-h-screen bg-gradient-to-br from-brand-700 via-brand-600 to-brand-800 md:grid md:grid-cols-2 md:bg-none">
+      {/* Form side */}
+      <div className="flex min-h-screen items-center justify-center p-4 md:bg-white">
+        <div className="w-full max-w-sm rounded-3xl bg-white p-7 shadow-2xl md:rounded-none md:p-0 md:shadow-none">
+          <div className="mb-8">
+            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-fab">
+              <HeartPulse className="h-6 w-6" />
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight">Đăng nhập</h1>
+            <p className="mt-1 text-sm text-gray-500">
+              {DEV_LOGIN
+                ? "Chế độ thử nghiệm — nhập email để vào."
+                : "Nhập email để nhận mã xác thực."}
+            </p>
           </div>
-          <h1 className="text-xl font-semibold">Hồ sơ sức khỏe</h1>
-          <p className="mt-1 text-sm text-gray-500">
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label
+                htmlFor="email"
+                className="mb-1 block text-sm font-medium text-gray-700"
+              >
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                required
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="ban@gmail.com"
+                className="input"
+              />
+            </div>
+
+            {error && <p className="text-sm text-red-600">{error}</p>}
+
+            <button type="submit" disabled={loading} className="btn-primary w-full">
+              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+              {DEV_LOGIN ? "Đăng nhập" : "Gửi mã xác thực"}
+            </button>
+          </form>
+
+          <p className="mt-6 text-xs text-gray-400">
             {DEV_LOGIN
-              ? "Chế độ thử nghiệm — nhập email để vào"
-              : "Đăng nhập bằng email để nhận mã xác thực"}
+              ? "Chế độ thử nghiệm: bỏ qua mã OTP. Sẽ bật lại khi dùng thật."
+              : "Chỉ những email đã được cấp quyền mới đăng nhập được."}
           </p>
         </div>
+      </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label
-              htmlFor="email"
-              className="mb-1 block text-sm font-medium text-gray-700"
-            >
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              required
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="ban@gmail.com"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-base outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
-            />
-          </div>
-
-          {error && <p className="text-sm text-red-600">{error}</p>}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 font-medium text-white transition hover:bg-brand-700 disabled:opacity-60"
-          >
-            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-            {DEV_LOGIN ? "Đăng nhập" : "Gửi mã xác thực"}
-          </button>
-        </form>
-
-        <p className="mt-6 text-center text-xs text-gray-400">
-          {DEV_LOGIN
-            ? "Chế độ thử nghiệm: bỏ qua mã OTP. Sẽ bật lại khi dùng thật."
-            : "Chỉ những email đã được cấp quyền mới đăng nhập được."}
-        </p>
+      {/* Brand side (desktop) */}
+      <div className="relative hidden overflow-hidden bg-gradient-to-br from-brand-700 via-brand-600 to-brand-800 md:flex md:flex-col md:justify-between md:p-10 md:text-white">
+        <div className="pointer-events-none absolute -right-16 -top-16 h-72 w-72 rounded-full bg-white/10 blur-2xl" />
+        <div className="pointer-events-none absolute -bottom-20 -left-10 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
+        <div className="relative flex items-center gap-2 font-semibold">
+          <HeartPulse className="h-5 w-5" />
+          Hồ sơ sức khỏe
+        </div>
+        <div className="relative">
+          <h2 className="text-3xl font-bold leading-snug">
+            Lưu giữ hồ sơ khám bệnh
+            <br />
+            của cả gia đình, an toàn.
+          </h2>
+          <p className="mt-4 max-w-md text-white/80">
+            Ghi lại từng lần khám, đính kèm kết quả xét nghiệm, toa thuốc và hóa
+            đơn. Chia sẻ an toàn cho người thân, tải nhanh khi cần đi bảo hiểm.
+          </p>
+        </div>
+        <div className="relative flex items-center gap-3 text-sm text-white/70">
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15">
+            🔒
+          </span>
+          Dữ liệu được bảo vệ bằng phân quyền chặt chẽ ở tầng cơ sở dữ liệu.
+        </div>
       </div>
     </main>
   );

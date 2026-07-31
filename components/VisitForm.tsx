@@ -116,85 +116,92 @@ export function VisitForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <Field label="Thành viên" required>
-        <select
-          required
-          value={profileId}
-          onChange={(e) => setProfileId(e.target.value)}
-          className="input"
-        >
-          <option value="" disabled>
-            — Chọn thành viên —
-          </option>
-          {profiles.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.full_name}
+      {/* Two columns on desktop; single column on mobile. */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Field label="Thành viên" required>
+          <select
+            required
+            value={profileId}
+            onChange={(e) => setProfileId(e.target.value)}
+            className="input"
+          >
+            <option value="" disabled>
+              — Chọn thành viên —
             </option>
-          ))}
-        </select>
-      </Field>
+            {profiles.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.full_name}
+              </option>
+            ))}
+          </select>
+        </Field>
 
-      <Field label="Ngày khám" required>
-        <input
-          type="date"
-          required
-          value={visitDate}
-          onChange={(e) => setVisitDate(e.target.value)}
-          className="input"
-        />
-      </Field>
+        <Field label="Ngày khám" required>
+          <input
+            type="date"
+            required
+            value={visitDate}
+            onChange={(e) => setVisitDate(e.target.value)}
+            className="input"
+          />
+        </Field>
 
-      <Field label="Bệnh viện / Phòng khám">
-        <Combobox
-          options={hospitalOptions}
-          value={hospital}
-          onChange={setHospital}
-          placeholder="— Chọn bệnh viện —"
-          searchPlaceholder="Tìm bệnh viện..."
-          allowCustom
-          customLabel="Nơi khám khác"
-        />
-      </Field>
+        <Field label="Bệnh viện / Phòng khám">
+          <Combobox
+            options={hospitalOptions}
+            value={hospital}
+            onChange={setHospital}
+            placeholder="— Chọn bệnh viện —"
+            searchPlaceholder="Tìm bệnh viện..."
+            allowCustom
+            customLabel="Nơi khám khác"
+          />
+        </Field>
 
-      <Field label="Chuyên khoa">
-        <Combobox
-          options={specialtyOptions}
-          value={specialty}
-          onChange={setSpecialty}
-          placeholder="— Chọn chuyên khoa —"
-          searchPlaceholder="Tìm chuyên khoa..."
-          allowCustom
-          customLabel="Chuyên khoa khác"
-        />
-      </Field>
+        <Field label="Chuyên khoa">
+          <Combobox
+            options={specialtyOptions}
+            value={specialty}
+            onChange={setSpecialty}
+            placeholder="— Chọn chuyên khoa —"
+            searchPlaceholder="Tìm chuyên khoa..."
+            allowCustom
+            customLabel="Chuyên khoa khác"
+          />
+        </Field>
 
-      <Field label="Chẩn đoán (có thể thêm nhiều)">
-        <MultiCombobox
-          options={icdOptions}
-          items={diagnoses}
-          onChange={setDiagnoses}
-          placeholder="Thêm chẩn đoán..."
-          searchPlaceholder="VD: F32, trầm cảm, viêm họng..."
-          customLabel="Chẩn đoán khác"
-        />
-      </Field>
+        <div className="sm:col-span-2">
+          <Field label="Chẩn đoán (có thể thêm nhiều)">
+            <MultiCombobox
+              options={icdOptions}
+              items={diagnoses}
+              onChange={setDiagnoses}
+              placeholder="Thêm chẩn đoán..."
+              searchPlaceholder="VD: F32, trầm cảm, viêm họng..."
+              customLabel="Chẩn đoán khác"
+            />
+          </Field>
+        </div>
 
-      <Field label="Bác sĩ">
-        <input
-          value={doctor}
-          onChange={(e) => setDoctor(e.target.value)}
-          className="input"
-        />
-      </Field>
+        <Field label="Bác sĩ">
+          <input
+            value={doctor}
+            onChange={(e) => setDoctor(e.target.value)}
+            className="input"
+          />
+        </Field>
 
-      <Field label="Ghi chú">
-        <textarea
-          rows={3}
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          className="input resize-none"
-        />
-      </Field>
+        <div className="sm:col-span-2">
+          <Field label="Ghi chú">
+            <textarea
+              rows={3}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="input resize-none"
+            />
+          </Field>
+        </div>
+      </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 

@@ -3,15 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import clsx from "clsx";
-import {
-  UserPlus,
-  Pencil,
-  X,
-  Loader2,
-  Save,
-  User as UserIcon,
-  ChevronRight,
-} from "lucide-react";
+import { UserPlus, Pencil, X, Loader2, Save, ChevronRight } from "lucide-react";
 import type { Profile } from "@/lib/types";
 import {
   useSaveProfile,
@@ -112,9 +104,6 @@ function ProfileCard({ profile }: { profile: Profile }) {
         href={`/member?id=${profile.id}`}
         className="flex min-w-0 flex-1 items-center gap-3"
       >
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600">
-          <UserIcon className="h-5 w-5" />
-        </div>
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold text-gray-900">
             {profile.full_name}
