@@ -17,6 +17,31 @@ import type {
 const BUCKET = "health-docs";
 const SIGNED_URL_TTL = 60 * 60; // 1 hour
 
+// Call an API route with the current user's access token, since the session
+// lives in localStorage (not cookies) and isn't sent automatically.
+async function authFetch(
+  supabase: SupabaseClient,
+  url: string,
+  body: unknown,
+  method = "POST",
+): Promise<void> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  const res = await fetch(url, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session?.access_token ?? ""}`,
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const b = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(b.error ?? "Thao tác thất bại. Vui lòng thử lại.");
+  }
+}
+
 // --- Reads --------------------------------------------------------------
 
 export function useProfiles() {
@@ -342,37 +367,20 @@ export function useManagers() {
 }
 
 export function useAddManager() {
+  const { supabase } = useAuth();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (email: string) => {
-      const res = await fetch("/api/managers", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(body.error ?? "Không thể thêm người quản lý.");
-      }
-    },
+    mutationFn: (email: string) => authFetch(supabase, "/api/managers", { email }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["managers"] }),
   });
 }
 
 export function useRemoveManager() {
+  const { supabase } = useAuth();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (email: string) => {
-      const res = await fetch("/api/managers", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(body.error ?? "Không thể gỡ người quản lý.");
-      }
-    },
+    mutationFn: (email: string) =>
+      authFetch(supabase, "/api/managers", { email }, "DELETE"),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["managers"] }),
   });
 }
@@ -423,25 +431,16 @@ export function useGuests() {
 }
 
 export function useAddGuest() {
+  const { supabase } = useAuth();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({
+    mutationFn: ({
       email,
       profileIds,
     }: {
       email: string;
       profileIds: string[];
-    }) => {
-      const res = await fetch("/api/guests", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, profileIds }),
-      });
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(body.error ?? "Không thể chia sẻ. Vui lòng thử lại.");
-      }
-    },
+    }) => authFetch(supabase, "/api/guests", { email, profileIds }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["guests"] }),
   });
 }

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createClient } from "@/lib/supabase/server";
+import { clientFromRequest } from "@/lib/supabase/from-token";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const bodySchema = z.object({
@@ -8,24 +8,21 @@ const bodySchema = z.object({
 });
 
 // Returns the caller's RLS-bound client if they are an admin, else null.
-async function requireAdmin() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user?.email) return null;
-  const { data: adminRow } = await supabase
+async function requireAdmin(request: Request) {
+  const ctx = await clientFromRequest(request);
+  if (!ctx?.user.email) return null;
+  const { data: adminRow } = await ctx.supabase
     .from("admins")
     .select("email")
-    .eq("email", user.email.toLowerCase())
+    .eq("email", ctx.user.email.toLowerCase())
     .maybeSingle();
-  return adminRow ? supabase : null;
+  return adminRow ? ctx.supabase : null;
 }
 
 // Appoint a manager: ensure an auth account exists (service_role) and add
 // their email to the managers table. Admin only.
 export async function POST(request: Request) {
-  const supabase = await requireAdmin();
+  const supabase = await requireAdmin(request);
   if (!supabase) {
     return NextResponse.json({ error: "Không có quyền." }, { status: 403 });
   }
@@ -58,7 +55,7 @@ export async function POST(request: Request) {
 // Remove a manager. Their auth account and any profiles they own remain, but
 // they lose manager rights (RLS stops matching is_manager()). Admin only.
 export async function DELETE(request: Request) {
-  const supabase = await requireAdmin();
+  const supabase = await requireAdmin(request);
   if (!supabase) {
     return NextResponse.json({ error: "Không có quyền." }, { status: 403 });
   }

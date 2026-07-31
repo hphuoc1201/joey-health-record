@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createClient } from "@/lib/supabase/server";
+import { clientFromRequest } from "@/lib/supabase/from-token";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const bodySchema = z.object({
@@ -19,13 +19,11 @@ export async function POST(request: Request) {
   }
   const { email, profileIds } = parsed.data;
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user?.email) {
+  const ctx = await clientFromRequest(request);
+  if (!ctx?.user.email) {
     return NextResponse.json({ error: "Chưa đăng nhập." }, { status: 401 });
   }
+  const supabase = ctx.supabase;
 
   // Ensure an auth account exists so the guest can receive an OTP.
   const admin = createAdminClient();
