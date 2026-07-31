@@ -1,5 +1,6 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { SUPABASE_URL } from "./url";
 
 // Server Supabase client bound to the current request's cookies (the logged-in
 // user's session). Reads/writes are constrained by Row Level Security.
@@ -7,7 +8,7 @@ export async function createClient() {
   const cookieStore = await cookies();
 
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {

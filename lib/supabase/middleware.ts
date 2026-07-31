@@ -1,5 +1,6 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { SUPABASE_URL } from "./url";
 
 // Refreshes the Supabase auth session on each request and redirects
 // unauthenticated users to the login page.
@@ -7,7 +8,7 @@ export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
