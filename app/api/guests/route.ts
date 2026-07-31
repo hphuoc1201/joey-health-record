@@ -24,6 +24,31 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Chưa đăng nhập." }, { status: 401 });
   }
   const supabase = ctx.supabase;
+  const callerEmail = ctx.user.email.toLowerCase();
+
+  // Authorize BEFORE creating any auth account: the caller must be an admin,
+  // or own every target profile. (Doing this first prevents an authenticated
+  // user from creating arbitrary accounts by passing profiles they don't own.)
+  const { data: adminRow } = await supabase
+    .from("admins")
+    .select("email")
+    .eq("email", callerEmail)
+    .maybeSingle();
+
+  if (!adminRow) {
+    const { data: profs } = await supabase
+      .from("profiles")
+      .select("id, owner_email")
+      .in("id", profileIds);
+    const owned = new Set(
+      (profs ?? [])
+        .filter((p) => (p as { owner_email: string | null }).owner_email === callerEmail)
+        .map((p) => (p as { id: string }).id),
+    );
+    if (!profileIds.every((id) => owned.has(id))) {
+      return NextResponse.json({ error: "Không có quyền." }, { status: 403 });
+    }
+  }
 
   // Ensure an auth account exists so the guest can receive an OTP.
   const admin = createAdminClient();
@@ -35,7 +60,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: createErr.message }, { status: 500 });
   }
 
-  // RLS rejects any profile the caller neither owns nor administers.
+  // RLS is the final guard on the actual grant rows.
   const { error } = await supabase
     .from("profile_grants")
     .upsert(
