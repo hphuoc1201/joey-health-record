@@ -21,19 +21,21 @@ export default function LoginPage() {
     const cleanEmail = email.trim().toLowerCase();
 
     if (DEV_LOGIN) {
-      // TESTING: sign in with just the email, no OTP.
+      // TESTING: sign in with just the email, no OTP. The server sets a known
+      // password; we sign in with it here.
       try {
         const res = await fetch("/api/dev-login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email: cleanEmail }),
         });
-        const body = (await res.json()) as { otp?: string; error?: string };
-        if (!res.ok || !body.otp) throw new Error(body.error ?? "Lỗi đăng nhập.");
-        const { error } = await supabase.auth.verifyOtp({
+        const body = (await res.json()) as { password?: string; error?: string };
+        if (!res.ok || !body.password) {
+          throw new Error(body.error ?? "Lỗi đăng nhập.");
+        }
+        const { error } = await supabase.auth.signInWithPassword({
           email: cleanEmail,
-          token: body.otp,
-          type: "email",
+          password: body.password,
         });
         if (error) throw error;
         router.replace("/");
