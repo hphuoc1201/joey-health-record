@@ -16,6 +16,7 @@ function VerifyForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (loading) return; // guard against a double submit consuming the code
     setError(null);
     setLoading(true);
 
@@ -26,11 +27,18 @@ function VerifyForm() {
       type: "email",
     });
 
-    setLoading(false);
-
     if (error) {
-      setError("Mã không đúng hoặc đã hết hạn. Vui lòng thử lại.");
-      return;
+      // A one-time code can only be verified once. If a duplicate submit
+      // already established a session, treat this as success instead of
+      // flashing an "expired code" error.
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) {
+        setLoading(false);
+        setError("Mã không đúng hoặc đã hết hạn. Vui lòng thử lại.");
+        return;
+      }
     }
 
     router.replace("/");
