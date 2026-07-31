@@ -6,11 +6,12 @@ import { useAuth } from "@/lib/auth-context";
 import { useShareVisits } from "@/lib/queries";
 import { ShareManager } from "@/components/ShareManager";
 import { ManagersSection } from "@/components/ManagersSection";
+import { ErrorState } from "@/components/ErrorState";
 
 export default function SharePage() {
   const router = useRouter();
   const { canManage, isAdmin, loading } = useAuth();
-  const { data: visits, isPending } = useShareVisits();
+  const { data: visits, isPending, error, refetch } = useShareVisits();
 
   if (!loading && !canManage) {
     router.replace("/");
@@ -27,7 +28,9 @@ export default function SharePage() {
 
       {isAdmin && <ManagersSection />}
 
-      {isPending ? (
+      {error ? (
+        <ErrorState error={error} onRetry={() => refetch()} />
+      ) : isPending ? (
         <div className="flex justify-center py-16">
           <Loader2 className="h-6 w-6 animate-spin text-brand-600" />
         </div>

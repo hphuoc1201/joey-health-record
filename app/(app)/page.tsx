@@ -7,12 +7,18 @@ import { useAuth } from "@/lib/auth-context";
 import { useProfiles, useVisits } from "@/lib/queries";
 import { TimelineCard } from "@/components/TimelineCard";
 import { PatientSelect, lastPatientKey } from "@/components/PatientSelect";
+import { ErrorState } from "@/components/ErrorState";
 import { formatMonthYear } from "@/lib/format";
 import type { VisitWithProfile } from "@/lib/types";
 
 export default function TimelinePage() {
   const { email, canManage } = useAuth();
-  const { data: profiles, isPending: profilesPending } = useProfiles();
+  const {
+    data: profiles,
+    isPending: profilesPending,
+    error: profilesError,
+    refetch: refetchProfiles,
+  } = useProfiles();
   const [patientId, setPatientId] = useState<string>("");
 
   // Pick the remembered patient (or the first one) once profiles load.
@@ -33,9 +39,12 @@ export default function TimelinePage() {
     localStorage.setItem(lastPatientKey(email), id);
   }
 
-  const { data: visits, isPending: visitsPending } = useVisits(
-    patientId || undefined,
-  );
+  const {
+    data: visits,
+    isPending: visitsPending,
+    error: visitsError,
+    refetch: refetchVisits,
+  } = useVisits(patientId || undefined);
 
   const groups = groupByMonth(patientId ? (visits ?? []) : []);
 
@@ -54,7 +63,9 @@ export default function TimelinePage() {
         )}
       </div>
 
-      {profilesPending ? (
+      {profilesError ? (
+        <ErrorState error={profilesError} onRetry={() => refetchProfiles()} />
+      ) : profilesPending ? (
         <div className="flex justify-center py-16">
           <Loader2 className="h-6 w-6 animate-spin text-brand-600" />
         </div>
@@ -68,7 +79,9 @@ export default function TimelinePage() {
             onChange={selectPatient}
           />
 
-          {visitsPending ? (
+          {visitsError ? (
+            <ErrorState error={visitsError} onRetry={() => refetchVisits()} />
+          ) : visitsPending ? (
             <div className="flex justify-center py-16">
               <Loader2 className="h-6 w-6 animate-spin text-brand-600" />
             </div>
@@ -100,15 +113,16 @@ function NoPatients({ canManage }: { canManage: boolean }) {
   return (
     <div className="card mt-10 flex flex-col items-center border-dashed px-6 py-12 text-center">
       <UserPlus className="mb-3 h-10 w-10 text-gray-300" />
-      <p className="font-medium text-gray-700">Chưa có bệnh nhân nào</p>
+      <p className="font-medium text-gray-700">Chưa có thành viên nào</p>
       <p className="mt-1 text-sm text-gray-500">
         {canManage
-          ? "Hãy tạo hồ sơ thành viên đầu tiên của gia đình bạn."
+          ? "Thêm người đầu tiên trong gia đình để bắt đầu lưu hồ sơ khám bệnh."
           : "Chưa có hồ sơ nào được chia sẻ với bạn."}
       </p>
       {canManage && (
         <Link href="/profiles" className="btn-primary mt-4 !px-4 !py-2 text-sm">
-          Tạo hồ sơ thành viên
+          <UserPlus className="h-4 w-4" />
+          Thêm thành viên
         </Link>
       )}
     </div>
@@ -126,13 +140,17 @@ function EmptyTimeline({
     <div className="card mt-6 flex flex-col items-center border-dashed px-6 py-12 text-center">
       <CalendarClock className="mb-3 h-10 w-10 text-gray-300" />
       <p className="font-medium text-gray-700">
-        Bệnh nhân này chưa có lần khám nào
+        Thành viên này chưa có lần khám nào
+      </p>
+      <p className="mt-1 text-sm text-gray-500">
+        Ghi lại lần khám để lưu kết quả xét nghiệm, toa thuốc và hóa đơn.
       </p>
       {canManage && (
         <Link
           href={`/visit/new?profile=${patientId}`}
           className="btn-primary mt-4 !px-4 !py-2 text-sm"
         >
+          <PlusCircle className="h-4 w-4" />
           Thêm lần khám
         </Link>
       )}

@@ -146,17 +146,24 @@ export interface ProfileInput {
 }
 
 export function useSaveProfile() {
-  const { supabase } = useAuth();
+  const { supabase, email } = useAuth();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, values }: { id?: string; values: ProfileInput }) => {
       if (id) {
         const { error } = await supabase.from("profiles").update(values).eq("id", id);
         if (error) throw error;
-      } else {
-        const { error } = await supabase.from("profiles").insert(values);
-        if (error) throw error;
+        return;
       }
+      // Set the owner explicitly rather than relying on the database trigger,
+      // and read the row back: if RLS would hide the new profile, that surfaces
+      // as an error here instead of a save that silently vanishes.
+      const { error } = await supabase
+        .from("profiles")
+        .insert({ ...values, owner_email: email })
+        .select("id")
+        .single();
+      if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["profiles"] }),
   });

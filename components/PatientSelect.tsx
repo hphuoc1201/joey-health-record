@@ -5,8 +5,8 @@ import { User as UserIcon } from "lucide-react";
 import type { Profile } from "@/lib/types";
 import { Combobox, type ComboOption } from "./Combobox";
 
-// Searchable patient picker for the timeline. Scales to any number of
-// patients (no horizontal tab scrolling) and supports typing to search.
+// Searchable member picker for the timeline. Scales to any number of members
+// (no horizontal tab scrolling) and supports typing to search.
 export function PatientSelect({
   profiles,
   value,
@@ -37,8 +37,8 @@ export function PatientSelect({
           options={options}
           value={value}
           onChange={onChange}
-          placeholder="— Chọn bệnh nhân —"
-          searchPlaceholder="Tìm theo tên bệnh nhân..."
+          placeholder="— Chọn thành viên —"
+          searchPlaceholder="Tìm theo tên..."
         />
       </div>
     </div>

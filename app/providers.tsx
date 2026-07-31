@@ -12,7 +12,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
           queries: {
             // Cached data shows instantly on revisit, then refetches in the
             // background — this is what makes navigation feel instant.
-            staleTime: 30_000,
+            // Mutations call invalidateQueries, so edits still show up right
+            // away despite the long stale window.
+            staleTime: 5 * 60_000,
+            gcTime: 30 * 60_000,
             refetchOnWindowFocus: false,
             retry: 1,
           },

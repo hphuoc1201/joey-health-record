@@ -5,10 +5,7 @@ import { formatDate } from "@/lib/format";
 
 export function TimelineCard({ visit }: { visit: VisitWithProfile }) {
   return (
-    <Link
-      href={`/visit/${visit.id}`}
-      className="card card-hover block p-4"
-    >
+    <Link href={`/visit?id=${visit.id}`} className="card card-hover block p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="mb-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500">

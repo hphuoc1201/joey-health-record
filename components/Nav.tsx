@@ -21,7 +21,7 @@ interface NavItem {
 
 const ITEMS: NavItem[] = [
   { href: "/", label: "Dòng thời gian", icon: Home },
-  { href: "/profiles", label: "Hồ sơ", icon: Users },
+  { href: "/profiles", label: "Thành viên", icon: Users },
   { href: "/visit/new", label: "Thêm", icon: PlusCircle, manageOnly: true },
   { href: "/share", label: "Chia sẻ", icon: Share2, manageOnly: true },
   { href: "/account", label: "Tài khoản", icon: User },

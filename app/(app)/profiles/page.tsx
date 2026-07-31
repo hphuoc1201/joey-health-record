@@ -4,20 +4,23 @@ import { Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useProfiles } from "@/lib/queries";
 import { ProfilesManager } from "@/components/ProfilesManager";
+import { ErrorState } from "@/components/ErrorState";
 
 export default function ProfilesPage() {
   const { canManage } = useAuth();
-  const { data: profiles, isPending } = useProfiles();
+  const { data: profiles, isPending, error, refetch } = useProfiles();
 
   return (
     <div>
-      <h1 className="mb-1 text-2xl font-bold">Hồ sơ thành viên</h1>
+      <h1 className="mb-1 text-2xl font-bold">Thành viên gia đình</h1>
       <p className="mb-5 text-sm text-gray-500">
         {canManage
-          ? "Quản lý các thành viên trong gia đình."
-          : "Những người có hồ sơ được chia sẻ với bạn."}
+          ? "Mỗi người bạn muốn lưu hồ sơ khám bệnh là một thành viên. Thêm thành viên trước, rồi ghi lại các lần khám của họ."
+          : "Những thành viên có hồ sơ được chia sẻ với bạn."}
       </p>
-      {isPending ? (
+      {error ? (
+        <ErrorState error={error} onRetry={() => refetch()} />
+      ) : isPending ? (
         <div className="flex justify-center py-16">
           <Loader2 className="h-6 w-6 animate-spin text-brand-600" />
         </div>

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import clsx from "clsx";
 import { UserPlus, Pencil, X, Loader2, Save, User as UserIcon } from "lucide-react";
 import type { Profile } from "@/lib/types";
 import {
@@ -11,6 +12,8 @@ import {
 } from "@/lib/queries";
 import { useAuth } from "@/lib/auth-context";
 import { DeleteButton } from "./DeleteButton";
+import { Combobox } from "./Combobox";
+import { RELATIONSHIPS, GENDERS } from "@/lib/relationships";
 import { formatDate } from "@/lib/format";
 
 export function ProfilesManager({ profiles }: { profiles: Profile[] }) {
@@ -22,12 +25,12 @@ export function ProfilesManager({ profiles }: { profiles: Profile[] }) {
       {canManage && (
         <div>
           {adding ? (
-            <div className="rounded-xl border border-gray-200 bg-white p-4">
+            <div className="card p-4">
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="font-semibold">Thêm thành viên</h2>
                 <button
                   onClick={() => setAdding(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-gray-400 transition-colors hover:text-gray-600"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -37,7 +40,7 @@ export function ProfilesManager({ profiles }: { profiles: Profile[] }) {
           ) : (
             <button
               onClick={() => setAdding(true)}
-              className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-gray-300 bg-white py-3 text-sm font-medium text-gray-600 transition hover:border-brand-300 hover:text-brand-600"
+              className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-gray-300 bg-white py-3 text-sm font-medium text-gray-600 transition-all duration-150 hover:border-brand-300 hover:bg-brand-50 hover:text-brand-600 active:scale-[0.99]"
             >
               <UserPlus className="h-4 w-4" />
               Thêm thành viên
@@ -49,8 +52,8 @@ export function ProfilesManager({ profiles }: { profiles: Profile[] }) {
       {profiles.length === 0 && !adding ? (
         <p className="rounded-lg border border-dashed border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-400">
           {canManage
-            ? "Chưa có thành viên nào. Hãy thêm người đầu tiên."
-            : "Chưa có hồ sơ nào được chia sẻ với bạn."}
+            ? "Chưa có thành viên nào. Bấm “Thêm thành viên” để bắt đầu."
+            : "Chưa có thành viên nào được chia sẻ với bạn."}
         </p>
       ) : (
         <ul className="space-y-3">
@@ -76,12 +79,12 @@ function ProfileCard({ profile }: { profile: Profile }) {
 
   if (editing) {
     return (
-      <li className="rounded-xl border border-gray-200 bg-white p-4">
+      <li className="card p-4">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-semibold">Sửa thông tin</h2>
+          <h2 className="font-semibold">Sửa thông tin thành viên</h2>
           <button
             onClick={() => setEditing(false)}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-gray-400 transition-colors hover:text-gray-600"
           >
             <X className="h-5 w-5" />
           </button>
@@ -122,7 +125,7 @@ function ProfileCard({ profile }: { profile: Profile }) {
             action={async () => {
               await deleteProfile.mutateAsync(profile.id);
             }}
-            confirmText={`Xóa hồ sơ "${profile.full_name}" và tất cả lần khám của người này?`}
+            confirmText={`Xóa thành viên "${profile.full_name}" và toàn bộ lần khám của người này?`}
           />
         </div>
       )}
@@ -138,87 +141,141 @@ function ProfileFields({
   onSaved: () => void;
 }) {
   const saveProfile = useSaveProfile();
+  const [fullName, setFullName] = useState(profile?.full_name ?? "");
+  const [relationship, setRelationship] = useState(profile?.relationship ?? "");
+  const [gender, setGender] = useState(profile?.gender ?? "");
+  const [dob, setDob] = useState(profile?.dob ?? "");
+  const [notes, setNotes] = useState(profile?.notes ?? "");
   const [error, setError] = useState<string | null>(null);
+
+  const relationshipOptions = useMemo(
+    () => RELATIONSHIPS.map((r) => ({ value: r, label: r })),
+    [],
+  );
+
+  function trimmed(v: string): string | null {
+    const t = v.trim();
+    return t.length > 0 ? t : null;
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
-    const fd = new FormData(e.currentTarget);
-    const str = (k: string) => {
-      const v = String(fd.get(k) ?? "").trim();
-      return v.length > 0 ? v : null;
-    };
     const values: ProfileInput = {
-      full_name: String(fd.get("full_name") ?? "").trim(),
-      relationship: str("relationship"),
-      dob: str("dob"),
-      gender: str("gender"),
-      notes: str("notes"),
+      full_name: fullName.trim(),
+      relationship: trimmed(relationship),
+      dob: trimmed(dob),
+      gender: trimmed(gender),
+      notes: trimmed(notes),
     };
     if (!values.full_name) return;
     try {
       await saveProfile.mutateAsync({ id: profile?.id, values });
       onSaved();
-    } catch {
-      setError("Lưu thất bại. Vui lòng thử lại.");
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? `Lưu thất bại: ${err.message}`
+          : "Lưu thất bại. Vui lòng thử lại.",
+      );
     }
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
-      <input
-        name="full_name"
-        required
-        placeholder="Họ và tên *"
-        defaultValue={profile?.full_name ?? ""}
-        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-base outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
-      />
-      <div className="grid grid-cols-2 gap-3">
-        <input
-          name="relationship"
-          placeholder="Quan hệ (Ba, Mẹ...)"
-          defaultValue={profile?.relationship ?? ""}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-base outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
-        />
-        <select
-          name="gender"
-          defaultValue={profile?.gender ?? ""}
-          className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-base outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
-        >
-          <option value="">Giới tính</option>
-          <option value="male">Nam</option>
-          <option value="female">Nữ</option>
-          <option value="other">Khác</option>
-        </select>
-      </div>
       <label className="block">
-        <span className="mb-1 block text-xs text-gray-500">Ngày sinh</span>
+        <span className="mb-1 block text-sm font-medium text-gray-700">
+          Họ và tên <span className="text-red-500">*</span>
+        </span>
         <input
-          type="date"
-          name="dob"
-          defaultValue={profile?.dob ?? ""}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-base outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+          required
+          value={fullName}
+          onChange={(e) => setFullName(e.target.value)}
+          placeholder="VD: Nguyễn Văn An"
+          className="input"
         />
       </label>
-      <textarea
-        name="notes"
-        rows={2}
-        placeholder="Ghi chú (tiền sử bệnh, dị ứng...)"
-        defaultValue={profile?.notes ?? ""}
-        className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-base outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
-      />
+
+      <label className="block">
+        <span className="mb-1 block text-sm font-medium text-gray-700">
+          Quan hệ với bạn
+        </span>
+        <Combobox
+          options={relationshipOptions}
+          value={relationship}
+          onChange={setRelationship}
+          placeholder="— Chọn quan hệ —"
+          searchPlaceholder="Tìm quan hệ..."
+          allowCustom
+          customLabel="Quan hệ khác"
+        />
+      </label>
+
+      <div>
+        <span className="mb-1 block text-sm font-medium text-gray-700">
+          Giới tính
+        </span>
+        <div className="flex gap-2">
+          {GENDERS.map((g) => {
+            const selected = gender === g.value;
+            return (
+              <button
+                key={g.value}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => setGender(selected ? "" : g.value)}
+                className={clsx(
+                  "flex-1 rounded-lg border px-3 py-2.5 text-sm font-medium transition-all duration-150 active:scale-[0.97]",
+                  selected
+                    ? "border-brand-600 bg-brand-600 text-white shadow-sm"
+                    : "border-gray-300 bg-white text-gray-600 hover:border-gray-400 hover:bg-gray-50",
+                )}
+              >
+                {g.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <label className="block">
+        <span className="mb-1 block text-sm font-medium text-gray-700">
+          Ngày sinh
+        </span>
+        <input
+          type="date"
+          value={dob}
+          onChange={(e) => setDob(e.target.value)}
+          className="input"
+        />
+      </label>
+
+      <label className="block">
+        <span className="mb-1 block text-sm font-medium text-gray-700">
+          Ghi chú
+        </span>
+        <textarea
+          rows={2}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Tiền sử bệnh, dị ứng thuốc, nhóm máu..."
+          className="input resize-none"
+        />
+      </label>
+
       {error && <p className="text-sm text-red-600">{error}</p>}
+
       <button
         type="submit"
         disabled={saveProfile.isPending}
-        className="flex items-center justify-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-700 disabled:opacity-60"
+        className="btn-primary !py-2 text-sm"
       >
         {saveProfile.isPending ? (
           <Loader2 className="h-4 w-4 animate-spin" />
         ) : (
           <Save className="h-4 w-4" />
         )}
-        Lưu
+        Lưu thành viên
       </button>
     </form>
   );

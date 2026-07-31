@@ -31,8 +31,8 @@ export function ManagersSection() {
         Người quản lý
       </h2>
       <p className="mb-3 text-sm text-gray-500">
-        Mỗi người quản lý tự tạo và quản lý hồ sơ gia đình của riêng họ. Họ chỉ
-        thấy bệnh nhân do chính họ tạo; bạn (admin) thấy tất cả.
+        Mỗi người quản lý tự thêm và quản lý thành viên gia đình của riêng họ. Họ
+        chỉ thấy thành viên do chính họ tạo; bạn (admin) thấy tất cả.
       </p>
 
       {isPending ? (

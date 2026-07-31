@@ -44,24 +44,22 @@ function NewVisit() {
       <h1 className="mb-5 text-2xl font-bold">Thêm lần khám</h1>
 
       {list.length === 0 ? (
-        <div className="flex flex-col items-center rounded-xl border border-dashed border-gray-300 bg-white px-6 py-12 text-center">
+        <div className="card flex flex-col items-center border-dashed px-6 py-12 text-center">
           <UserPlus className="mb-3 h-10 w-10 text-gray-300" />
-          <p className="font-medium text-gray-700">Chưa có thành viên nào</p>
+          <p className="font-medium text-gray-700">Bạn cần thêm thành viên trước</p>
           <p className="mt-1 text-sm text-gray-500">
-            Hãy tạo hồ sơ thành viên trước khi thêm lần khám.
+            Mỗi lần khám thuộc về một thành viên, nên hãy thêm người đó trước đã.
           </p>
-          <Link
-            href="/profiles"
-            className="mt-4 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
-          >
-            Tạo hồ sơ thành viên
+          <Link href="/profiles" className="btn-primary mt-4 !px-4 !py-2 text-sm">
+            <UserPlus className="h-4 w-4" />
+            Thêm thành viên
           </Link>
         </div>
       ) : (
         <VisitForm
           onSubmit={async (values) => {
             const id = await saveVisit.mutateAsync({ values });
-            router.replace(`/visit/${id}`);
+            router.replace(`/visit?id=${id}`);
           }}
           profiles={list}
           defaultProfileId={defaultProfileId}
