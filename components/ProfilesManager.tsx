@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import clsx from "clsx";
 import { UserPlus, Pencil, X, Loader2, Save, User as UserIcon } from "lucide-react";
 import type { Profile } from "@/lib/types";
@@ -12,9 +12,12 @@ import {
 } from "@/lib/queries";
 import { useAuth } from "@/lib/auth-context";
 import { DeleteButton } from "./DeleteButton";
-import { Combobox } from "./Combobox";
-import { RELATIONSHIPS, GENDERS } from "@/lib/relationships";
+import { GENDERS } from "@/lib/relationships";
 import { formatDate } from "@/lib/format";
+
+function genderLabel(value: string | null): string | null {
+  return GENDERS.find((g) => g.value === value)?.label ?? null;
+}
 
 export function ProfilesManager({ profiles }: { profiles: Profile[] }) {
   const { canManage } = useAuth();
@@ -102,7 +105,10 @@ function ProfileCard({ profile }: { profile: Profile }) {
       <div className="min-w-0 flex-1">
         <p className="truncate font-semibold text-gray-900">{profile.full_name}</p>
         <p className="truncate text-sm text-gray-500">
-          {[profile.relationship, profile.dob ? formatDate(profile.dob) : null]
+          {[
+            genderLabel(profile.gender),
+            profile.dob ? formatDate(profile.dob) : null,
+          ]
             .filter(Boolean)
             .join(" · ") || "—"}
         </p>
@@ -142,16 +148,10 @@ function ProfileFields({
 }) {
   const saveProfile = useSaveProfile();
   const [fullName, setFullName] = useState(profile?.full_name ?? "");
-  const [relationship, setRelationship] = useState(profile?.relationship ?? "");
   const [gender, setGender] = useState(profile?.gender ?? "");
   const [dob, setDob] = useState(profile?.dob ?? "");
   const [notes, setNotes] = useState(profile?.notes ?? "");
   const [error, setError] = useState<string | null>(null);
-
-  const relationshipOptions = useMemo(
-    () => RELATIONSHIPS.map((r) => ({ value: r, label: r })),
-    [],
-  );
 
   function trimmed(v: string): string | null {
     const t = v.trim();
@@ -163,7 +163,7 @@ function ProfileFields({
     setError(null);
     const values: ProfileInput = {
       full_name: fullName.trim(),
-      relationship: trimmed(relationship),
+      relationship: null,
       dob: trimmed(dob),
       gender: trimmed(gender),
       notes: trimmed(notes),
@@ -193,21 +193,6 @@ function ProfileFields({
           onChange={(e) => setFullName(e.target.value)}
           placeholder="VD: Nguyễn Văn An"
           className="input"
-        />
-      </label>
-
-      <label className="block">
-        <span className="mb-1 block text-sm font-medium text-gray-700">
-          Quan hệ với bạn
-        </span>
-        <Combobox
-          options={relationshipOptions}
-          value={relationship}
-          onChange={setRelationship}
-          placeholder="— Chọn quan hệ —"
-          searchPlaceholder="Tìm quan hệ..."
-          allowCustom
-          customLabel="Quan hệ khác"
         />
       </label>
 

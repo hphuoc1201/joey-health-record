@@ -16,6 +16,12 @@ import { useProfiles, useVisits } from "@/lib/queries";
 import { TimelineCard } from "@/components/TimelineCard";
 import { PatientSelect, lastPatientKey } from "@/components/PatientSelect";
 import { ErrorState } from "@/components/ErrorState";
+import {
+  VisitFilters,
+  applyFilters,
+  EMPTY_FILTERS,
+  type Filters,
+} from "@/components/VisitFilters";
 import { downloadVisitsZip } from "@/lib/download";
 import { formatMonthYear } from "@/lib/format";
 import type { VisitWithProfile } from "@/lib/types";
@@ -55,7 +61,14 @@ export default function TimelinePage() {
     refetch: refetchVisits,
   } = useVisits(patientId || undefined);
 
-  const visitList = patientId ? (visits ?? []) : [];
+  const allVisits = patientId ? (visits ?? []) : [];
+
+  // Filters.
+  const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
+  const visitList = useMemo(
+    () => applyFilters(allVisits, filters),
+    [allVisits, filters],
+  );
   const groups = groupByMonth(visitList);
 
   // Selection + download state.
@@ -67,10 +80,11 @@ export default function TimelinePage() {
     [profiles, patientId],
   );
 
-  // Reset selection when the patient changes or select mode is exited.
+  // Reset selection and filters when the patient changes.
   useEffect(() => {
     setSelectMode(false);
     setSelected(new Set());
+    setFilters(EMPTY_FILTERS);
   }, [patientId]);
 
   function toggle(id: string) {
@@ -133,12 +147,18 @@ export default function TimelinePage() {
             <div className="flex justify-center py-16">
               <Loader2 className="h-6 w-6 animate-spin text-brand-600" />
             </div>
-          ) : groups.length === 0 ? (
+          ) : allVisits.length === 0 ? (
             <EmptyTimeline canManage={canManage} patientId={patientId} />
           ) : (
             <>
+              <VisitFilters
+                visits={allVisits}
+                filters={filters}
+                onChange={setFilters}
+              />
+
               {/* Download toolbar */}
-              <div className="mb-4 flex items-center gap-2">
+              <div className="mb-4 flex flex-wrap items-center gap-2">
                 {selectMode ? (
                   <>
                     <button
@@ -170,7 +190,7 @@ export default function TimelinePage() {
                   <>
                     <button
                       onClick={() => download(visitList)}
-                      disabled={downloading}
+                      disabled={downloading || visitList.length === 0}
                       className="btn-primary !px-3 !py-2 text-sm"
                     >
                       {downloading ? (
@@ -178,10 +198,11 @@ export default function TimelinePage() {
                       ) : (
                         <Download className="h-4 w-4" />
                       )}
-                      Tải tất cả
+                      Tải tất cả ({visitList.length})
                     </button>
                     <button
                       onClick={() => setSelectMode(true)}
+                      disabled={visitList.length === 0}
                       className="btn-secondary"
                     >
                       <CheckSquare className="h-4 w-4" />
@@ -191,26 +212,41 @@ export default function TimelinePage() {
                 )}
               </div>
 
-              <div className="space-y-6">
-                {groups.map((group) => (
-                  <section key={group.key}>
-                    <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-400">
-                      {group.label}
-                    </h2>
-                    <div className="space-y-3">
-                      {group.visits.map((v) => (
-                        <TimelineCard
-                          key={v.id}
-                          visit={v}
-                          selectMode={selectMode}
-                          selected={selected.has(v.id)}
-                          onToggle={toggle}
-                        />
-                      ))}
-                    </div>
-                  </section>
-                ))}
-              </div>
+              {groups.length === 0 ? (
+                <div className="card border-dashed px-6 py-10 text-center">
+                  <p className="text-sm text-gray-500">
+                    Không có lần khám nào khớp bộ lọc.
+                  </p>
+                  <button
+                    onClick={() => setFilters(EMPTY_FILTERS)}
+                    className="btn-secondary mx-auto mt-3"
+                  >
+                    <X className="h-4 w-4" />
+                    Xóa bộ lọc
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {groups.map((group) => (
+                    <section key={group.key}>
+                      <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-400">
+                        {group.label}
+                      </h2>
+                      <div className="space-y-3">
+                        {group.visits.map((v) => (
+                          <TimelineCard
+                            key={v.id}
+                            visit={v}
+                            selectMode={selectMode}
+                            selected={selected.has(v.id)}
+                            onToggle={toggle}
+                          />
+                        ))}
+                      </div>
+                    </section>
+                  ))}
+                </div>
+              )}
             </>
           )}
         </>

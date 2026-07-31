@@ -48,10 +48,7 @@ export function ShareCenter() {
     () =>
       (profilesQ.data ?? [])
         .filter((p) => canEditProfile(p, auth))
-        .map((p) => ({
-          value: p.id,
-          label: p.relationship ? `${p.full_name} (${p.relationship})` : p.full_name,
-        })),
+        .map((p) => ({ value: p.id, label: p.full_name })),
     [profilesQ.data, auth],
   );
 

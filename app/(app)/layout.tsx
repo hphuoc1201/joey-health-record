@@ -20,9 +20,9 @@ function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen">
       <Nav canManage={canManage} />
-      {/* Left padding for the desktop sidebar; bottom padding for the mobile nav. */}
-      <main className="mx-auto max-w-3xl px-4 pb-24 pt-6 md:pl-64 md:pb-10">
-        {children}
+      {/* Clear the fixed desktop sidebar (240px); bottom padding for mobile nav. */}
+      <main className="px-4 pb-24 pt-6 md:pb-10 md:pl-60">
+        <div className="mx-auto max-w-5xl">{children}</div>
       </main>
     </div>
   );

@@ -17,13 +17,7 @@ export function PatientSelect({
   onChange: (profileId: string) => void;
 }) {
   const options = useMemo<ComboOption[]>(
-    () =>
-      profiles.map((p) => ({
-        value: p.id,
-        label: p.relationship
-          ? `${p.full_name} (${p.relationship})`
-          : p.full_name,
-      })),
+    () => profiles.map((p) => ({ value: p.id, label: p.full_name })),
     [profiles],
   );
 

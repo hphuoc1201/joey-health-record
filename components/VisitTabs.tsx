@@ -25,9 +25,10 @@ export function VisitTabs({
   const current = docs.filter((d) => d.category === active);
 
   return (
-    <div>
-      {/* Tab bar */}
-      <div className="-mx-4 mb-4 flex gap-1 overflow-x-auto px-4">
+    // Vertical tabs beside the content on desktop; tabs wrap (no horizontal
+    // scroll) above the content on mobile.
+    <div className="md:flex md:items-start md:gap-6">
+      <div className="mb-4 flex flex-wrap gap-2 md:mb-0 md:w-56 md:shrink-0 md:flex-col md:gap-1">
         {CATEGORIES.map((cat) => {
           const count = docs.filter((d) => d.category === cat.key).length;
           const Icon = cat.icon;
@@ -37,14 +38,14 @@ export function VisitTabs({
               key={cat.key}
               onClick={() => setActive(cat.key)}
               className={clsx(
-                "flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition",
+                "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-150 active:scale-[0.98] md:w-full",
                 isActive
-                  ? "bg-brand-600 text-white"
+                  ? "bg-brand-600 text-white shadow-sm"
                   : "bg-white text-gray-600 hover:bg-gray-100",
               )}
             >
-              <Icon className="h-4 w-4" />
-              {cat.label}
+              <Icon className="h-4 w-4 shrink-0" />
+              <span className="md:flex-1 md:text-left">{cat.label}</span>
               {count > 0 && (
                 <span
                   className={clsx(
@@ -60,28 +61,25 @@ export function VisitTabs({
         })}
       </div>
 
-      {canEdit && (
-        <div className="mb-4">
-          <UploadForm visitId={visitId} profileId={profileId} category={active} />
-        </div>
-      )}
+      <div className="min-w-0 flex-1">
+        {canEdit && (
+          <div className="mb-4">
+            <UploadForm visitId={visitId} profileId={profileId} category={active} />
+          </div>
+        )}
 
-      {current.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-400">
-          Chưa có tệp nào trong mục này.
-        </p>
-      ) : (
-        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {current.map((doc) => (
-            <DocCard
-              key={doc.id}
-              doc={doc}
-              visitId={visitId}
-              canEdit={canEdit}
-            />
-          ))}
-        </ul>
-      )}
+        {current.length === 0 ? (
+          <p className="rounded-lg border border-dashed border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-400">
+            Chưa có tệp nào trong mục này.
+          </p>
+        ) : (
+          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {current.map((doc) => (
+              <DocCard key={doc.id} doc={doc} visitId={visitId} canEdit={canEdit} />
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }

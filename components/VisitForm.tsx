@@ -129,7 +129,6 @@ export function VisitForm({
           {profiles.map((p) => (
             <option key={p.id} value={p.id}>
               {p.full_name}
-              {p.relationship ? ` (${p.relationship})` : ""}
             </option>
           ))}
         </select>
