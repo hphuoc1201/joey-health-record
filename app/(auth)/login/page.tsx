@@ -80,9 +80,8 @@ export default function LoginPage() {
       <div className="flex min-h-screen items-center justify-center p-4 md:bg-white">
         <div className="w-full max-w-sm rounded-3xl bg-white p-7 shadow-2xl md:rounded-none md:p-0 md:shadow-none">
           <div className="mb-8">
-            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-fab">
-              <HeartPulse className="h-6 w-6" />
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.svg" alt="" className="mb-4 h-12 w-12 rounded-2xl shadow-fab" />
             <h1 className="text-2xl font-bold tracking-tight">Đăng nhập</h1>
             <p className="mt-1 text-sm text-gray-500">
               {DEV_LOGIN

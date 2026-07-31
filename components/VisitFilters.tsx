@@ -4,11 +4,13 @@ import { useMemo, useState } from "react";
 import { SlidersHorizontal, X } from "lucide-react";
 import clsx from "clsx";
 import type { VisitWithProfile } from "@/lib/types";
+import { CLAIM_STATUSES } from "@/lib/claims";
 
 export interface Filters {
   hospital: string;
   specialty: string;
   code: string;
+  claim: string; // ClaimStatus | ""
   from: string; // yyyy-mm-dd
   to: string;
 }
@@ -17,6 +19,7 @@ export const EMPTY_FILTERS: Filters = {
   hospital: "",
   specialty: "",
   code: "",
+  claim: "",
   from: "",
   to: "",
 };
@@ -35,6 +38,7 @@ export function applyFilters(
     if (f.specialty && v.specialty !== f.specialty) return false;
     if (f.code && !(v.diagnoses ?? []).some((d) => d.code === f.code))
       return false;
+    if (f.claim && v.claim_status !== f.claim) return false;
     if (f.from && v.visit_date < f.from) return false;
     if (f.to && v.visit_date > f.to) return false;
     return true;
@@ -93,7 +97,21 @@ export function VisitFilters({
       {open && (
         <div className="card mt-2 p-4">
           {/* Stacked on mobile, spread across on desktop. */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <Row label="Trạng thái claim">
+              <select
+                value={filters.claim}
+                onChange={(e) => set("claim", e.target.value)}
+                className="input !py-2 text-sm"
+              >
+                <option value="">Tất cả</option>
+                {CLAIM_STATUSES.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </Row>
             <Row label="Bệnh viện">
               <Select
                 value={filters.hospital}

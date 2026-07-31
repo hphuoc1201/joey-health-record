@@ -15,12 +15,24 @@ import {
   Download,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
-import { useVisit, useDeleteVisit, canEditProfile } from "@/lib/queries";
+import {
+  useVisit,
+  useDeleteVisit,
+  useUpdateClaim,
+  canEditProfile,
+} from "@/lib/queries";
 import { VisitTabs } from "@/components/VisitTabs";
 import { DeleteButton } from "@/components/DeleteButton";
 import { ErrorState } from "@/components/ErrorState";
 import { downloadVisitsZip } from "@/lib/download";
 import { formatDate } from "@/lib/format";
+import {
+  claimClass,
+  CLAIM_STATUSES,
+  visitTypeLabel,
+  formatVnd,
+} from "@/lib/claims";
+import clsx from "clsx";
 
 function VisitDetail() {
   const searchParams = useSearchParams();
@@ -29,6 +41,7 @@ function VisitDetail() {
   const auth = useAuth();
   const { data, isPending, error, refetch } = useVisit(id);
   const deleteVisit = useDeleteVisit();
+  const updateClaim = useUpdateClaim();
   const canEdit = canEditProfile(data?.visit.profiles, auth);
   const [downloading, setDownloading] = useState(false);
 
@@ -143,6 +156,17 @@ function VisitDetail() {
           <Detail icon={Building2} label="Bệnh viện" value={visit.hospital} />
           <Detail icon={Stethoscope} label="Chuyên khoa" value={visit.specialty} />
           <Detail icon={UserIcon} label="Bác sĩ" value={visit.doctor} />
+          <Detail
+            icon={Stethoscope}
+            label="Loại khám"
+            value={
+              visitTypeLabel(visit.visit_type) &&
+              (visit.visit_type === "inpatient" && visit.discharge_date
+                ? `Nội trú (ra viện ${formatDate(visit.discharge_date)})`
+                : visitTypeLabel(visit.visit_type))
+            }
+          />
+          <Detail icon={Stethoscope} label="Triệu chứng" value={visit.symptoms} />
         </dl>
 
         {visit.notes && (
@@ -151,6 +175,71 @@ function VisitDetail() {
             {visit.notes}
           </div>
         )}
+      </div>
+
+      {/* Insurance claim panel */}
+      <div className="card mb-5 p-5">
+        <h2 className="mb-3 text-sm font-semibold text-gray-700">
+          Bảo hiểm (claim)
+        </h2>
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+          <div>
+            <span className="text-gray-500">Trạng thái: </span>
+            {canEdit ? (
+              <select
+                value={visit.claim_status}
+                onChange={(e) =>
+                  updateClaim.mutate({
+                    id: visit.id,
+                    claim_status: e.target.value as (typeof CLAIM_STATUSES)[number]["value"],
+                    claim_amount: visit.claim_amount,
+                  })
+                }
+                className={clsx(
+                  "rounded-full border-0 px-2 py-1 text-xs font-medium focus:ring-2 focus:ring-brand-200",
+                  claimClass(visit.claim_status),
+                )}
+              >
+                {CLAIM_STATUSES.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <span
+                className={clsx(
+                  "rounded-full px-2 py-0.5 text-xs font-medium",
+                  claimClass(visit.claim_status),
+                )}
+              >
+                {CLAIM_STATUSES.find((s) => s.value === visit.claim_status)?.label}
+              </span>
+            )}
+          </div>
+          <div>
+            <span className="text-gray-500">Tổng chi phí: </span>
+            <span className="font-semibold">{formatVnd(visit.total_cost)}</span>
+          </div>
+          {visit.claim_status === "claimed" && (
+            <>
+              <div>
+                <span className="text-gray-500">Claim được: </span>
+                <span className="font-semibold text-emerald-600">
+                  {formatVnd(visit.claim_amount)}
+                </span>
+              </div>
+              {visit.total_cost != null && visit.claim_amount != null && (
+                <div>
+                  <span className="text-gray-500">Còn tự trả: </span>
+                  <span className="font-semibold">
+                    {formatVnd(Math.max(0, visit.total_cost - visit.claim_amount))}
+                  </span>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
       {/* Documents by category */}

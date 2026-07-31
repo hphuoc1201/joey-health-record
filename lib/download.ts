@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { HealthDocument, VisitWithProfile } from "@/lib/types";
 import { formatDate } from "@/lib/format";
+import { claimLabel, visitTypeLabel, formatVnd } from "@/lib/claims";
 
 const BUCKET = "health-docs";
 
@@ -31,10 +32,19 @@ function infoText(v: VisitWithProfile): string {
   return [
     `Ngày khám: ${formatDate(v.visit_date)} (${v.visit_date})`,
     `Thành viên: ${v.profiles?.full_name ?? "—"}`,
+    `Loại khám: ${visitTypeLabel(v.visit_type) ?? "—"}${
+      v.visit_type === "inpatient" && v.discharge_date
+        ? ` (ra viện ${formatDate(v.discharge_date)})`
+        : ""
+    }`,
     `Bệnh viện / Phòng khám: ${v.hospital ?? "—"}`,
     `Chuyên khoa: ${v.specialty ?? "—"}`,
     `Bác sĩ: ${v.doctor ?? "—"}`,
+    `Triệu chứng: ${v.symptoms ?? "—"}`,
     `Chẩn đoán:\n  ${diag}`,
+    `Tổng chi phí: ${formatVnd(v.total_cost)}`,
+    `Trạng thái bảo hiểm: ${claimLabel(v.claim_status)}`,
+    `Số tiền claim được: ${v.claim_status === "claimed" ? formatVnd(v.claim_amount) : "—"}`,
     `Ghi chú: ${v.notes ?? "—"}`,
   ].join("\n");
 }

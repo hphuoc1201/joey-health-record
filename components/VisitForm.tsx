@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, Save } from "lucide-react";
-import type { Profile, Visit } from "@/lib/types";
+import type { Profile, Visit, VisitType, ClaimStatus } from "@/lib/types";
 import type { VisitInput } from "@/lib/queries";
 import { useVisits } from "@/lib/queries";
 import { Combobox, type ComboOption } from "./Combobox";
@@ -10,6 +10,12 @@ import { MultiCombobox, type MultiItem } from "./MultiCombobox";
 import { HOSPITALS } from "@/lib/hospitals";
 import { SPECIALTIES } from "@/lib/specialties";
 import { ICD10 } from "@/lib/icd10";
+import { VISIT_TYPES, CLAIM_STATUSES } from "@/lib/claims";
+
+function toNum(s: string): number | null {
+  const n = Number(s.replace(/[^\d.]/g, ""));
+  return s.trim() && !Number.isNaN(n) ? n : null;
+}
 
 function toNull(s: string): string | null {
   const t = s.trim();
@@ -52,7 +58,21 @@ export function VisitForm({
     () => initialDiagnoses(visit),
   );
   const [doctor, setDoctor] = useState(visit?.doctor ?? "");
+  const [symptoms, setSymptoms] = useState(visit?.symptoms ?? "");
+  const [visitType, setVisitType] = useState<VisitType | "">(
+    visit?.visit_type ?? "",
+  );
+  const [dischargeDate, setDischargeDate] = useState(visit?.discharge_date ?? "");
   const [notes, setNotes] = useState(visit?.notes ?? "");
+  const [totalCost, setTotalCost] = useState(
+    visit?.total_cost != null ? String(visit.total_cost) : "",
+  );
+  const [claimStatus, setClaimStatus] = useState<ClaimStatus>(
+    visit?.claim_status ?? "none",
+  );
+  const [claimAmount, setClaimAmount] = useState(
+    visit?.claim_amount != null ? String(visit.claim_amount) : "",
+  );
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -107,6 +127,12 @@ export function VisitForm({
         diagnoses: diagnoses.map((d) => ({ code: d.value, name: d.label })),
         doctor: toNull(doctor),
         notes: toNull(notes),
+        symptoms: toNull(symptoms),
+        visit_type: visitType || null,
+        discharge_date: visitType === "inpatient" ? toNull(dischargeDate) : null,
+        total_cost: toNum(totalCost),
+        claim_status: claimStatus,
+        claim_amount: claimStatus === "claimed" ? toNum(claimAmount) : null,
       });
     } catch {
       setError("Lưu thất bại. Vui lòng thử lại.");
@@ -190,6 +216,88 @@ export function VisitForm({
             className="input"
           />
         </Field>
+
+        <Field label="Loại khám">
+          <div className="flex gap-2">
+            {VISIT_TYPES.map((t) => {
+              const selected = visitType === t.value;
+              return (
+                <button
+                  key={t.value}
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => setVisitType(selected ? "" : t.value)}
+                  className={`flex-1 rounded-xl border px-3 py-2.5 text-sm font-medium transition-all duration-150 active:scale-[0.97] ${
+                    selected
+                      ? "border-brand-600 bg-brand-600 text-white shadow-sm"
+                      : "border-gray-300 bg-white text-gray-600 hover:border-gray-400"
+                  }`}
+                >
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
+        </Field>
+
+        {visitType === "inpatient" && (
+          <Field label="Ngày ra viện">
+            <input
+              type="date"
+              value={dischargeDate}
+              onChange={(e) => setDischargeDate(e.target.value)}
+              className="input"
+            />
+          </Field>
+        )}
+
+        <div className="sm:col-span-2">
+          <Field label="Triệu chứng">
+            <textarea
+              rows={2}
+              value={symptoms}
+              onChange={(e) => setSymptoms(e.target.value)}
+              placeholder="VD: sốt, ho, đau bụng..."
+              className="input resize-none"
+            />
+          </Field>
+        </div>
+
+        <Field label="Tổng chi phí (khám + thuốc)">
+          <input
+            inputMode="numeric"
+            value={totalCost}
+            onChange={(e) => setTotalCost(e.target.value)}
+            placeholder="VD: 1500000"
+            className="input"
+          />
+        </Field>
+
+        <Field label="Trạng thái bảo hiểm (claim)">
+          <select
+            value={claimStatus}
+            onChange={(e) => setClaimStatus(e.target.value as ClaimStatus)}
+            className="input"
+          >
+            {CLAIM_STATUSES.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+        </Field>
+
+        {claimStatus === "claimed" && (
+          <Field label="Số tiền claim được">
+            <input
+              inputMode="numeric"
+              value={claimAmount}
+              onChange={(e) => setClaimAmount(e.target.value)}
+              placeholder="VD: 1200000"
+              className="input"
+            />
+          </Field>
+        )}
 
         <div className="sm:col-span-2">
           <Field label="Ghi chú">

@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo } from "react";
-import { User as UserIcon } from "lucide-react";
 import type { Profile } from "@/lib/types";
 import { Combobox, type ComboOption } from "./Combobox";
 
@@ -26,20 +25,13 @@ export function PatientSelect({
       <p className="mb-1.5 text-sm text-gray-500">
         Đang xem lịch sử khám bệnh của
       </p>
-      <div className="flex items-center gap-2">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600">
-          <UserIcon className="h-5 w-5" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <Combobox
-            options={options}
-            value={value}
-            onChange={onChange}
-            placeholder="— Chọn thành viên —"
-            searchPlaceholder="Tìm theo tên..."
-          />
-        </div>
-      </div>
+      <Combobox
+        options={options}
+        value={value}
+        onChange={onChange}
+        placeholder="— Chọn thành viên —"
+        searchPlaceholder="Tìm theo tên..."
+      />
     </div>
   );
 }

@@ -21,6 +21,9 @@ export interface Diagnosis {
   name: string;
 }
 
+export type ClaimStatus = "none" | "pending" | "rejected" | "claimed";
+export type VisitType = "outpatient" | "inpatient";
+
 export interface Visit {
   id: string;
   profile_id: string;
@@ -32,6 +35,12 @@ export interface Visit {
   diagnoses: Diagnosis[];
   doctor: string | null;
   notes: string | null;
+  symptoms: string | null;
+  visit_type: VisitType | null;
+  discharge_date: string | null;
+  total_cost: number | null;
+  claim_status: ClaimStatus;
+  claim_amount: number | null;
   created_at: string;
 }
 

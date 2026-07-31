@@ -116,9 +116,14 @@ function MemberDetail() {
             <Stat icon={Activity} label="Tổng lần khám" value={stats.total} />
             <Stat icon={FileText} label="Tài liệu" value={docCount ?? "…"} />
             <Stat
-              icon={Building2}
-              label="Nơi đã khám"
-              value={stats.hospitalsCount}
+              icon={CalendarClock}
+              label="Trung bình giữa 2 lần khám"
+              value={
+                stats.avgIntervalDays != null
+                  ? `${stats.avgIntervalDays} ngày`
+                  : "—"
+              }
+              small
             />
             <Stat
               icon={CalendarClock}
@@ -162,6 +167,38 @@ function MemberDetail() {
                   <ChevronRight className="h-4 w-4" />
                 </button>
               </Panel>
+
+              {/* Diagnosis progression */}
+              {stats.recurring.length > 0 && (
+                <div className="lg:col-span-2">
+                  <Panel title="Diễn tiến theo mã bệnh (bệnh tái diễn)" icon={Activity}>
+                    <ul className="space-y-4">
+                      {stats.recurring.slice(0, 6).map((r) => (
+                        <li key={r.label}>
+                          <p className="mb-1.5 text-sm font-medium text-gray-800">
+                            {r.label}{" "}
+                            <span className="text-gray-400">
+                              ({r.dates.length} lần)
+                            </span>
+                          </p>
+                          <div className="flex flex-wrap items-center gap-x-1 gap-y-2">
+                            {r.dates.map((d, i) => (
+                              <span key={i} className="flex items-center">
+                                {i > 0 && (
+                                  <span className="mx-1 h-px w-4 bg-gray-200" />
+                                )}
+                                <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700">
+                                  {formatDate(d)}
+                                </span>
+                              </span>
+                            ))}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </Panel>
+                </div>
+              )}
             </div>
           )}
         </>

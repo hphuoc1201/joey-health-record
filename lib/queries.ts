@@ -193,6 +193,12 @@ export interface VisitInput {
   diagnoses: Diagnosis[];
   doctor: string | null;
   notes: string | null;
+  symptoms: string | null;
+  visit_type: import("@/lib/types").VisitType | null;
+  discharge_date: string | null;
+  total_cost: number | null;
+  claim_status: import("@/lib/types").ClaimStatus;
+  claim_amount: number | null;
 }
 
 // Fold the diagnoses array into the row we persist: the array is the source of
@@ -207,6 +213,12 @@ function visitRow(values: VisitInput) {
     specialty: values.specialty,
     doctor: values.doctor,
     notes: values.notes,
+    symptoms: values.symptoms,
+    visit_type: values.visit_type,
+    discharge_date: values.discharge_date,
+    total_cost: values.total_cost,
+    claim_status: values.claim_status,
+    claim_amount: values.claim_status === "claimed" ? values.claim_amount : null,
     diagnoses: values.diagnoses,
     diagnosis: names.length > 0 ? names.join("; ") : null,
     icd_code: codes.length > 0 ? codes.join(", ") : null,
@@ -241,6 +253,36 @@ export function useSaveVisit() {
     onSuccess: (_id, vars) => {
       qc.invalidateQueries({ queryKey: ["visits"] });
       if (vars.id) qc.invalidateQueries({ queryKey: ["visit", vars.id] });
+    },
+  });
+}
+
+// Quick claim-status change from the visit detail page.
+export function useUpdateClaim() {
+  const { supabase } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      claim_status,
+      claim_amount,
+    }: {
+      id: string;
+      claim_status: import("@/lib/types").ClaimStatus;
+      claim_amount?: number | null;
+    }) => {
+      const { error } = await supabase
+        .from("visits")
+        .update({
+          claim_status,
+          claim_amount: claim_status === "claimed" ? (claim_amount ?? null) : null,
+        })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_r, vars) => {
+      qc.invalidateQueries({ queryKey: ["visits"] });
+      qc.invalidateQueries({ queryKey: ["visit", vars.id] });
     },
   });
 }
@@ -396,24 +438,32 @@ export interface GuestEntry {
 // Every profile_grant the current user can see (admin: all; owner: their own
 // patients' grants), grouped by guest email.
 export function useGuests() {
-  const { supabase, session, canManage } = useAuth();
+  const { supabase, session, canManage, isAdmin, email } = useAuth();
   return useQuery({
     queryKey: ["guests"],
     enabled: Boolean(session) && canManage,
     queryFn: async (): Promise<GuestEntry[]> => {
       const { data, error } = await supabase
         .from("profile_grants")
-        .select("id, profile_id, granted_email, profiles(full_name)")
+        .select("id, profile_id, granted_email, profiles(full_name, owner_email)")
         .order("created_at", { ascending: true });
       if (error) throw error;
 
-      const byEmail = new Map<string, GuestEntry>();
-      for (const row of (data ?? []) as unknown as {
+      // RLS also returns grants where the current user is the *recipient*
+      // (read-own). Keep only grants for patients this user owns (or all, for
+      // an admin) — i.e. the shares this user actually made.
+      const rowsRaw = (data ?? []) as unknown as {
         id: string;
         profile_id: string;
         granted_email: string;
-        profiles: { full_name: string | null } | null;
-      }[]) {
+        profiles: { full_name: string | null; owner_email: string | null } | null;
+      }[];
+      const rows = rowsRaw.filter(
+        (r) => isAdmin || r.profiles?.owner_email === email,
+      );
+
+      const byEmail = new Map<string, GuestEntry>();
+      for (const row of rows) {
         const entry = byEmail.get(row.granted_email) ?? {
           email: row.granted_email,
           grants: [],

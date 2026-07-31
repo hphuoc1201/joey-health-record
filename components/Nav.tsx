@@ -3,15 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import clsx from "clsx";
-import {
-  Home,
-  Users,
-  Plus,
-  Share2,
-  LogOut,
-  HeartPulse,
-  type LucideIcon,
-} from "lucide-react";
+import { Home, Users, Plus, Share2, LogOut, type LucideIcon } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 
 interface NavItem {
@@ -60,9 +52,12 @@ export function Nav({ canManage }: { canManage: boolean }) {
       {/* Desktop sidebar (dark) */}
       <aside className="fixed inset-y-0 left-0 z-20 hidden w-60 flex-col bg-ink-900 px-3 py-6 md:flex">
         <div className="mb-8 flex items-center gap-2.5 px-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-fab">
-            <HeartPulse className="h-5 w-5" />
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo.svg"
+            alt=""
+            className="h-10 w-10 rounded-2xl shadow-fab"
+          />
           <span className="text-[15px] font-bold tracking-tight text-white">
             Hồ sơ sức khỏe
           </span>

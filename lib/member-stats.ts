@@ -6,14 +6,22 @@ export interface Counted {
   count: number;
 }
 
+export interface DiagnosisProgression {
+  code: string;
+  label: string;
+  dates: string[]; // visit dates (ascending) where this diagnosis appears
+}
+
 export interface MemberStats {
   total: number;
   lastVisit: string | null;
   firstVisit: string | null;
   hospitalsCount: number;
+  avgIntervalDays: number | null; // average days between consecutive visits
   byYear: { year: string; count: number }[];
   topSpecialties: Counted[];
   topDiagnoses: Counted[];
+  recurring: DiagnosisProgression[]; // diagnoses seen in 2+ visits
 }
 
 // Everything derivable from a member's visit list (already sorted newest-first).
@@ -22,6 +30,7 @@ export function computeMemberStats(visits: VisitWithProfile[]): MemberStats {
   const hospitals = new Set<string>();
   const specialties = new Map<string, number>();
   const diagnoses = new Map<string, Counted>();
+  const progression = new Map<string, DiagnosisProgression>();
 
   for (const v of visits) {
     const year = v.visit_date.slice(0, 4);
@@ -36,8 +45,38 @@ export function computeMemberStats(visits: VisitWithProfile[]): MemberStats {
       const existing = diagnoses.get(key);
       const label = d.code ? `${d.code} · ${d.name}` : d.name;
       diagnoses.set(key, { key, label, count: (existing?.count ?? 0) + 1 });
+
+      const prog =
+        progression.get(key) ??
+        ({ code: d.code, label, dates: [] } as DiagnosisProgression);
+      prog.dates.push(v.visit_date);
+      progression.set(key, prog);
     }
   }
+
+  // Average number of days between consecutive visits.
+  const sortedDates = visits
+    .map((v) => v.visit_date)
+    .sort((a, b) => a.localeCompare(b));
+  let avgIntervalDays: number | null = null;
+  if (sortedDates.length >= 2) {
+    let totalDays = 0;
+    for (let i = 1; i < sortedDates.length; i++) {
+      totalDays +=
+        (new Date(sortedDates[i]).getTime() -
+          new Date(sortedDates[i - 1]).getTime()) /
+        86_400_000;
+    }
+    avgIntervalDays = Math.round(totalDays / (sortedDates.length - 1));
+  }
+
+  const recurring = Array.from(progression.values())
+    .filter((p) => p.dates.length >= 2)
+    .map((p) => ({
+      ...p,
+      dates: p.dates.slice().sort((a, b) => a.localeCompare(b)),
+    }))
+    .sort((a, b) => b.dates.length - a.dates.length);
 
   const byYear = Array.from(years.entries())
     .map(([year, count]) => ({ year, count }))
@@ -57,9 +96,11 @@ export function computeMemberStats(visits: VisitWithProfile[]): MemberStats {
     lastVisit: visits[0]?.visit_date ?? null,
     firstVisit: visits[visits.length - 1]?.visit_date ?? null,
     hospitalsCount: hospitals.size,
+    avgIntervalDays,
     byYear,
     topSpecialties,
     topDiagnoses,
+    recurring,
   };
 }
 
