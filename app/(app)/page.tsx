@@ -229,7 +229,8 @@ export default function TimelinePage() {
                 <div className="space-y-6">
                   {groups.map((group) => (
                     <section key={group.key}>
-                      <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-400">
+                      <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-500">
+                        <span className="h-4 w-1 rounded-full bg-gradient-to-b from-brand-500 to-brand-700" />
                         {group.label}
                       </h2>
                       <div className="space-y-3">
