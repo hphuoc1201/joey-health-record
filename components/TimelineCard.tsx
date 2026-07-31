@@ -4,6 +4,13 @@ import type { VisitWithProfile } from "@/lib/types";
 import { formatDate } from "@/lib/format";
 
 export function TimelineCard({ visit }: { visit: VisitWithProfile }) {
+  const diagnoses = visit.diagnoses ?? [];
+  const codes = diagnoses.map((d) => d.code).filter(Boolean);
+  const title =
+    diagnoses.length > 0
+      ? diagnoses.map((d) => d.name).filter(Boolean).join(", ")
+      : visit.diagnosis || "Chưa có chẩn đoán";
+
   return (
     <Link href={`/visit?id=${visit.id}`} className="card card-hover block p-4">
       <div className="flex items-start justify-between gap-3">
@@ -12,15 +19,23 @@ export function TimelineCard({ visit }: { visit: VisitWithProfile }) {
             <span className="font-medium text-gray-700">
               {formatDate(visit.visit_date)}
             </span>
-            {visit.icd_code && (
-              <span className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-[11px] font-medium text-gray-600">
-                {visit.icd_code}
+            {codes.slice(0, 3).map((code) => (
+              <span
+                key={code}
+                className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-[11px] font-medium text-gray-600"
+              >
+                {code}
+              </span>
+            ))}
+            {codes.length > 3 && (
+              <span className="text-[11px] text-gray-400">
+                +{codes.length - 3}
               </span>
             )}
           </div>
 
           <h3 className="truncate text-base font-semibold text-gray-900">
-            {visit.diagnosis || "Chưa có chẩn đoán"}
+            {title}
           </h3>
 
           <div className="mt-1.5 space-y-1 text-sm text-gray-600">

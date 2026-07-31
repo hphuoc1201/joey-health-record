@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { Upload, Loader2 } from "lucide-react";
 import type { DocumentCategory } from "@/lib/types";
 import { useUploadDocument } from "@/lib/queries";
+import { compressImage } from "@/lib/compress";
 
 export function UploadForm({
   visitId,
@@ -22,9 +23,11 @@ export function UploadForm({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    const file = inputRef.current?.files?.[0];
-    if (!file) return;
+    const picked = inputRef.current?.files?.[0];
+    if (!picked) return;
     try {
+      // Shrink photos before upload; PDFs and other files pass through.
+      const file = await compressImage(picked);
       await upload.mutateAsync({ visitId, profileId, category, file });
       formRef.current?.reset();
     } catch {

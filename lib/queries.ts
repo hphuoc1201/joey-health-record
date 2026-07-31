@@ -4,11 +4,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { useAuth } from "@/lib/auth-context";
 import type {
-  AccessGrant,
   ClientDoc,
+  Diagnosis,
   DocumentCategory,
   HealthDocument,
   Profile,
+  ProfileGrant,
   Visit,
   VisitWithProfile,
 } from "@/lib/types";
@@ -108,33 +109,6 @@ export function useVisit(id: string) {
   });
 }
 
-export interface ShareVisit {
-  id: string;
-  visit_date: string;
-  diagnosis: string | null;
-  hospital: string | null;
-  profiles: { full_name: string } | null;
-  access_grants: AccessGrant[];
-}
-
-export function useShareVisits() {
-  const { supabase, session, canManage } = useAuth();
-  return useQuery({
-    queryKey: ["share-visits"],
-    enabled: Boolean(session) && canManage,
-    queryFn: async (): Promise<ShareVisit[]> => {
-      const { data, error } = await supabase
-        .from("visits")
-        .select(
-          "id, visit_date, diagnosis, hospital, profiles(full_name), access_grants(*)",
-        )
-        .order("visit_date", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as unknown as ShareVisit[];
-    },
-  });
-}
-
 // --- Profile mutations --------------------------------------------------
 
 export interface ProfileInput {
@@ -191,10 +165,27 @@ export interface VisitInput {
   visit_date: string;
   hospital: string | null;
   specialty: string | null;
-  diagnosis: string | null;
-  icd_code: string | null;
+  diagnoses: Diagnosis[];
   doctor: string | null;
   notes: string | null;
+}
+
+// Fold the diagnoses array into the row we persist: the array is the source of
+// truth, plus derived scalar summaries kept for display and search.
+function visitRow(values: VisitInput) {
+  const names = values.diagnoses.map((d) => d.name).filter(Boolean);
+  const codes = values.diagnoses.map((d) => d.code).filter(Boolean);
+  return {
+    profile_id: values.profile_id,
+    visit_date: values.visit_date,
+    hospital: values.hospital,
+    specialty: values.specialty,
+    doctor: values.doctor,
+    notes: values.notes,
+    diagnoses: values.diagnoses,
+    diagnosis: names.length > 0 ? names.join("; ") : null,
+    icd_code: codes.length > 0 ? codes.join(", ") : null,
+  };
 }
 
 export function useSaveVisit() {
@@ -208,14 +199,15 @@ export function useSaveVisit() {
       id?: string;
       values: VisitInput;
     }): Promise<string> => {
+      const row = visitRow(values);
       if (id) {
-        const { error } = await supabase.from("visits").update(values).eq("id", id);
+        const { error } = await supabase.from("visits").update(row).eq("id", id);
         if (error) throw error;
         return id;
       }
       const { data, error } = await supabase
         .from("visits")
-        .insert(values)
+        .insert(row)
         .select("id")
         .single();
       if (error) throw error;
@@ -385,40 +377,87 @@ export function useRemoveManager() {
   });
 }
 
-// --- Sharing mutations --------------------------------------------------
+// --- Guests (khách): per-patient read-only sharing ----------------------
 
-export function useGrantAccess() {
+// One guest email with the set of patients they can view.
+export interface GuestEntry {
+  email: string;
+  grants: { id: string; profile_id: string; full_name: string | null }[];
+}
+
+// Every profile_grant the current user can see (admin: all; owner: their own
+// patients' grants), grouped by guest email.
+export function useGuests() {
+  const { supabase, session, canManage } = useAuth();
+  return useQuery({
+    queryKey: ["guests"],
+    enabled: Boolean(session) && canManage,
+    queryFn: async (): Promise<GuestEntry[]> => {
+      const { data, error } = await supabase
+        .from("profile_grants")
+        .select("id, profile_id, granted_email, profiles(full_name)")
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+
+      const byEmail = new Map<string, GuestEntry>();
+      for (const row of (data ?? []) as unknown as {
+        id: string;
+        profile_id: string;
+        granted_email: string;
+        profiles: { full_name: string | null } | null;
+      }[]) {
+        const entry = byEmail.get(row.granted_email) ?? {
+          email: row.granted_email,
+          grants: [],
+        };
+        entry.grants.push({
+          id: row.id,
+          profile_id: row.profile_id,
+          full_name: row.profiles?.full_name ?? null,
+        });
+        byEmail.set(row.granted_email, entry);
+      }
+      return Array.from(byEmail.values());
+    },
+  });
+}
+
+export function useAddGuest() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ visitId, email }: { visitId: string; email: string }) => {
-      const res = await fetch("/api/grant-access", {
+    mutationFn: async ({
+      email,
+      profileIds,
+    }: {
+      email: string;
+      profileIds: string[];
+    }) => {
+      const res = await fetch("/api/guests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ visitId, email }),
+        body: JSON.stringify({ email, profileIds }),
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
         throw new Error(body.error ?? "Không thể chia sẻ. Vui lòng thử lại.");
       }
     },
-    onSuccess: (_r, vars) => {
-      qc.invalidateQueries({ queryKey: ["share-visits"] });
-      qc.invalidateQueries({ queryKey: ["visit", vars.visitId] });
-    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["guests"] }),
   });
 }
 
-export function useRevokeAccess() {
+// Remove one patient grant from a guest (deletes a single profile_grants row).
+export function useRemoveGuestGrant() {
   const { supabase } = useAuth();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ grantId }: { grantId: string; visitId: string }) => {
-      const { error } = await supabase.from("access_grants").delete().eq("id", grantId);
+    mutationFn: async (grantId: string) => {
+      const { error } = await supabase
+        .from("profile_grants")
+        .delete()
+        .eq("id", grantId);
       if (error) throw error;
     },
-    onSuccess: (_r, vars) => {
-      qc.invalidateQueries({ queryKey: ["share-visits"] });
-      qc.invalidateQueries({ queryKey: ["visit", vars.visitId] });
-    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["guests"] }),
   });
 }

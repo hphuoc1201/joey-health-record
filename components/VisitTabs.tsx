@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import clsx from "clsx";
-import { FileText, ImageIcon, ExternalLink } from "lucide-react";
+import { FileText, ImageIcon, Download } from "lucide-react";
 import { CATEGORIES } from "@/lib/categories";
 import type { ClientDoc, DocumentCategory } from "@/lib/types";
 import { formatBytes } from "@/lib/format";
@@ -98,8 +98,14 @@ function DocCard({
   const isImage = (doc.mime_type ?? "").startsWith("image/");
   const deleteDocument = useDeleteDocument();
 
+  // Supabase signed URLs honor a `download` query param, forcing a save-as
+  // (with the original filename) instead of opening in the tab.
+  const downloadUrl = `${doc.url}${doc.url.includes("?") ? "&" : "?"}download=${encodeURIComponent(
+    doc.file_name,
+  )}`;
+
   return (
-    <li className="group relative overflow-hidden rounded-lg border border-gray-200 bg-white">
+    <li className="card group relative overflow-hidden">
       <a href={doc.url} target="_blank" rel="noopener noreferrer" className="block">
         <div className="flex aspect-square items-center justify-center bg-gray-50">
           {isImage ? (
@@ -113,21 +119,33 @@ function DocCard({
             <FileText className="h-10 w-10 text-gray-300" />
           )}
         </div>
-        <div className="flex items-center gap-1.5 px-2.5 py-2">
-          {isImage ? (
-            <ImageIcon className="h-3.5 w-3.5 shrink-0 text-gray-400" />
-          ) : (
-            <FileText className="h-3.5 w-3.5 shrink-0 text-gray-400" />
-          )}
-          <span className="truncate text-xs text-gray-700">{doc.file_name}</span>
-          <ExternalLink className="ml-auto h-3 w-3 shrink-0 text-gray-300" />
-        </div>
         {doc.size_bytes ? (
           <span className="absolute left-1.5 top-1.5 rounded bg-black/50 px-1.5 py-0.5 text-[10px] text-white">
             {formatBytes(doc.size_bytes)}
           </span>
         ) : null}
       </a>
+
+      <div className="flex items-center gap-1.5 border-t border-gray-100 px-2.5 py-2">
+        {isImage ? (
+          <ImageIcon className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+        ) : (
+          <FileText className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+        )}
+        <span className="min-w-0 flex-1 truncate text-xs text-gray-700">
+          {doc.file_name}
+        </span>
+        <a
+          href={downloadUrl}
+          download={doc.file_name}
+          onClick={(e) => e.stopPropagation()}
+          className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-gray-400 transition-colors hover:bg-brand-50 hover:text-brand-600"
+          title="Tải xuống"
+        >
+          <Download className="h-3.5 w-3.5" />
+        </a>
+      </div>
+
       {canEdit && (
         <div className="absolute right-1.5 top-1.5">
           <div className="rounded-md bg-white/90 shadow-sm">

@@ -6,6 +6,7 @@ import type { Profile, Visit } from "@/lib/types";
 import type { VisitInput } from "@/lib/queries";
 import { useVisits } from "@/lib/queries";
 import { Combobox, type ComboOption } from "./Combobox";
+import { MultiCombobox, type MultiItem } from "./MultiCombobox";
 import { HOSPITALS } from "@/lib/hospitals";
 import { SPECIALTIES } from "@/lib/specialties";
 import { ICD10 } from "@/lib/icd10";
@@ -13,6 +14,18 @@ import { ICD10 } from "@/lib/icd10";
 function toNull(s: string): string | null {
   const t = s.trim();
   return t.length > 0 ? t : null;
+}
+
+// Seed the diagnosis chips from a visit being edited, falling back to the
+// legacy single diagnosis/icd_code for rows created before multi-diagnosis.
+function initialDiagnoses(visit?: Visit): MultiItem[] {
+  if (visit?.diagnoses && visit.diagnoses.length > 0) {
+    return visit.diagnoses.map((d) => ({ value: d.code, label: d.name }));
+  }
+  if (visit?.diagnosis) {
+    return [{ value: visit.icd_code ?? "", label: visit.diagnosis }];
+  }
+  return [];
 }
 
 export function VisitForm({
@@ -35,8 +48,9 @@ export function VisitForm({
   const [visitDate, setVisitDate] = useState(visit?.visit_date ?? "");
   const [hospital, setHospital] = useState(visit?.hospital ?? "");
   const [specialty, setSpecialty] = useState(visit?.specialty ?? "");
-  const [diagnosis, setDiagnosis] = useState(visit?.diagnosis ?? "");
-  const [icdCode, setIcdCode] = useState(visit?.icd_code ?? "");
+  const [diagnoses, setDiagnoses] = useState<MultiItem[]>(
+    () => initialDiagnoses(visit),
+  );
   const [doctor, setDoctor] = useState(visit?.doctor ?? "");
   const [notes, setNotes] = useState(visit?.notes ?? "");
   const [pending, setPending] = useState(false);
@@ -90,8 +104,7 @@ export function VisitForm({
         visit_date: visitDate,
         hospital: toNull(hospital),
         specialty: toNull(specialty),
-        diagnosis: toNull(diagnosis),
-        icd_code: toNull(icdCode),
+        diagnoses: diagnoses.map((d) => ({ code: d.value, name: d.label })),
         doctor: toNull(doctor),
         notes: toNull(notes),
       });
@@ -156,40 +169,15 @@ export function VisitForm({
         />
       </Field>
 
-      <Field label="Chẩn đoán (gõ tên bệnh hoặc mã ICD-10)">
-        <Combobox
+      <Field label="Chẩn đoán (có thể thêm nhiều)">
+        <MultiCombobox
           options={icdOptions}
-          value={icdCode || diagnosis}
-          onChange={(value, option) => {
-            if (option) {
-              // Picked from the ICD list: fill both name and code.
-              setDiagnosis(option.label);
-              setIcdCode(option.value);
-            } else {
-              // Free text: treat as the diagnosis name.
-              setDiagnosis(value);
-              setIcdCode("");
-            }
-          }}
-          placeholder="— Chọn hoặc nhập chẩn đoán —"
+          items={diagnoses}
+          onChange={setDiagnoses}
+          placeholder="Thêm chẩn đoán..."
           searchPlaceholder="VD: F32, trầm cảm, viêm họng..."
-          allowCustom
           customLabel="Chẩn đoán khác"
         />
-        <div className="mt-2 grid grid-cols-[7rem_1fr] gap-2">
-          <input
-            value={icdCode}
-            onChange={(e) => setIcdCode(e.target.value.toUpperCase())}
-            placeholder="Mã ICD"
-            className="input !py-2 text-sm"
-          />
-          <input
-            value={diagnosis}
-            onChange={(e) => setDiagnosis(e.target.value)}
-            placeholder="Tên chẩn đoán"
-            className="input !py-2 text-sm"
-          />
-        </div>
       </Field>
 
       <Field label="Bác sĩ">

@@ -74,17 +74,27 @@ function VisitDetail() {
               <CalendarDays className="h-4 w-4" />
               {formatDate(visit.visit_date)}
             </div>
-            <h1 className="flex items-center gap-2 text-xl font-bold text-gray-900">
-              <FileHeart className="h-5 w-5 shrink-0 text-brand-600" />
-              <span>
-                {visit.diagnosis || "Chưa có chẩn đoán"}
-                {visit.icd_code && (
-                  <span className="ml-2 align-middle rounded bg-gray-100 px-1.5 py-0.5 font-mono text-xs font-medium text-gray-600">
-                    {visit.icd_code}
-                  </span>
-                )}
-              </span>
-            </h1>
+            <div className="flex items-start gap-2 text-gray-900">
+              <FileHeart className="mt-1 h-5 w-5 shrink-0 text-brand-600" />
+              {(visit.diagnoses ?? []).length > 0 ? (
+                <ul className="space-y-1">
+                  {visit.diagnoses.map((d, i) => (
+                    <li key={i} className="flex items-baseline gap-2">
+                      {d.code && (
+                        <span className="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 font-mono text-xs font-medium text-gray-600">
+                          {d.code}
+                        </span>
+                      )}
+                      <span className="text-lg font-bold">{d.name}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <h1 className="text-xl font-bold">
+                  {visit.diagnosis || "Chưa có chẩn đoán"}
+                </h1>
+              )}
+            </div>
           </div>
           {canEdit && (
             <div className="flex shrink-0 items-center gap-2">

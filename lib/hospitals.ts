@@ -33,7 +33,6 @@ export const HOSPITALS: string[] = [
   "BV Quốc tế City",
   "BV Xuyên Á",
   // Hà Nội
-  "BV Đa khoa Tâm Anh Hà Nội",
   "BV Bạch Mai",
   "BV Hữu nghị Việt Đức",
   "BV Trung ương Quân đội 108",
