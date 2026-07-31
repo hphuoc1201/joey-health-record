@@ -1,8 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import clsx from "clsx";
-import { UserPlus, Pencil, X, Loader2, Save, User as UserIcon } from "lucide-react";
+import {
+  UserPlus,
+  Pencil,
+  X,
+  Loader2,
+  Save,
+  User as UserIcon,
+  ChevronRight,
+} from "lucide-react";
 import type { Profile } from "@/lib/types";
 import {
   useSaveProfile,
@@ -98,26 +107,34 @@ function ProfileCard({ profile }: { profile: Profile }) {
   }
 
   return (
-    <li className="card card-hover flex items-center gap-3 p-4">
-      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600">
-        <UserIcon className="h-5 w-5" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="truncate font-semibold text-gray-900">{profile.full_name}</p>
-        <p className="truncate text-sm text-gray-500">
-          {[
-            genderLabel(profile.gender),
-            profile.dob ? formatDate(profile.dob) : null,
-          ]
-            .filter(Boolean)
-            .join(" · ") || "—"}
-        </p>
-        {ownerLabel && (
-          <p className="mt-0.5 truncate text-xs text-gray-400">
-            Chủ hộ: {ownerLabel}
+    <li className="card card-hover group flex items-center gap-3 p-4">
+      <Link
+        href={`/member?id=${profile.id}`}
+        className="flex min-w-0 flex-1 items-center gap-3"
+      >
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600">
+          <UserIcon className="h-5 w-5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-semibold text-gray-900">
+            {profile.full_name}
           </p>
-        )}
-      </div>
+          <p className="truncate text-sm text-gray-500">
+            {[
+              genderLabel(profile.gender),
+              profile.dob ? formatDate(profile.dob) : null,
+            ]
+              .filter(Boolean)
+              .join(" · ") || "—"}
+          </p>
+          {ownerLabel && (
+            <p className="mt-0.5 truncate text-xs text-gray-400">
+              Chủ hộ: {ownerLabel}
+            </p>
+          )}
+        </div>
+      </Link>
+      <ChevronRight className="hidden h-5 w-5 shrink-0 text-gray-300 transition-transform group-hover:translate-x-0.5 group-hover:text-brand-400 sm:block" />
       {canEdit && (
         <div className="flex shrink-0 items-center gap-1">
           <button

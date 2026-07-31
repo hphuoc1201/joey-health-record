@@ -1,6 +1,6 @@
 import Link from "next/link";
 import clsx from "clsx";
-import { Building2, Stethoscope, ChevronRight, Check, FileHeart } from "lucide-react";
+import { Building2, Stethoscope, ChevronRight, Check } from "lucide-react";
 import type { VisitWithProfile } from "@/lib/types";
 import { formatDate } from "@/lib/format";
 
@@ -36,11 +36,6 @@ export function TimelineCard({
           {selected && <Check className="h-3.5 w-3.5" />}
         </div>
       )}
-
-      {/* Leading icon */}
-      <div className="flex h-11 w-11 shrink-0 items-center justify-center self-start rounded-xl bg-gradient-to-br from-brand-50 to-brand-100 text-brand-600">
-        <FileHeart className="h-5 w-5" />
-      </div>
 
       <div className="min-w-0 flex-1">
         <div className="mb-1 flex flex-wrap items-center gap-1.5">

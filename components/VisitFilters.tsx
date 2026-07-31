@@ -91,32 +91,33 @@ export function VisitFilters({
       </button>
 
       {open && (
-        <div className="card mt-2 space-y-3 p-4">
-          <Row label="Bệnh viện">
-            <Select
-              value={filters.hospital}
-              onChange={(v) => set("hospital", v)}
-              options={hospitals}
-              anyLabel="Tất cả bệnh viện"
-            />
-          </Row>
-          <Row label="Chuyên khoa">
-            <Select
-              value={filters.specialty}
-              onChange={(v) => set("specialty", v)}
-              options={specialties}
-              anyLabel="Tất cả chuyên khoa"
-            />
-          </Row>
-          <Row label="Mã bệnh (ICD-10)">
-            <Select
-              value={filters.code}
-              onChange={(v) => set("code", v)}
-              options={codes}
-              anyLabel="Tất cả mã bệnh"
-            />
-          </Row>
-          <div className="grid grid-cols-2 gap-3">
+        <div className="card mt-2 p-4">
+          {/* Stacked on mobile, spread across on desktop. */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <Row label="Bệnh viện">
+              <Select
+                value={filters.hospital}
+                onChange={(v) => set("hospital", v)}
+                options={hospitals}
+                anyLabel="Tất cả"
+              />
+            </Row>
+            <Row label="Chuyên khoa">
+              <Select
+                value={filters.specialty}
+                onChange={(v) => set("specialty", v)}
+                options={specialties}
+                anyLabel="Tất cả"
+              />
+            </Row>
+            <Row label="Mã bệnh (ICD-10)">
+              <Select
+                value={filters.code}
+                onChange={(v) => set("code", v)}
+                options={codes}
+                anyLabel="Tất cả"
+              />
+            </Row>
             <Row label="Từ ngày">
               <input
                 type="date"
@@ -138,7 +139,7 @@ export function VisitFilters({
           {count > 0 && (
             <button
               onClick={() => onChange(EMPTY_FILTERS)}
-              className="flex items-center gap-1 text-sm text-gray-500 hover:text-red-600"
+              className="mt-3 flex items-center gap-1 text-sm text-gray-500 transition-colors hover:text-red-600"
             >
               <X className="h-4 w-4" />
               Xóa bộ lọc
