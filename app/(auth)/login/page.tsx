@@ -62,15 +62,16 @@ export default function LoginPage() {
       options: { shouldCreateUser: false },
     });
 
-    setLoading(false);
-
     if (error) {
+      setLoading(false);
       setError(
         "Không gửi được mã. Email này chưa được cấp quyền truy cập, hoặc vui lòng thử lại sau.",
       );
       return;
     }
 
+    // Keep the button in its loading state through the navigation so it never
+    // flashes back to normal before the OTP screen appears.
     router.push(`/verify?email=${encodeURIComponent(cleanEmail)}`);
   }
 
