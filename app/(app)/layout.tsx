@@ -20,10 +20,11 @@ function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen">
       <Nav canManage={canManage} />
-      {/* Clear the fixed sidebar (240px) from lg up; bottom padding leaves room
-          for the mobile/tablet bottom nav below lg. */}
-      <main className="px-4 pb-24 pt-6 lg:pb-10 lg:pl-60">
-        <div className="mx-auto max-w-5xl">{children}</div>
+      {/* lg:pl-60 only *clears* the fixed 240px sidebar; the inner wrapper owns
+          the horizontal gutter (px-4 / lg:px-8) so content never butts up
+          against the sidebar. Bottom padding leaves room for the bottom nav. */}
+      <main className="pb-24 pt-6 lg:pb-10 lg:pl-60">
+        <div className="mx-auto max-w-5xl px-4 lg:px-8">{children}</div>
       </main>
     </div>
   );
