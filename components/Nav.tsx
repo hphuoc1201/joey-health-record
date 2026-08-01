@@ -49,8 +49,9 @@ export function Nav({ canManage }: { canManage: boolean }) {
 
   return (
     <>
-      {/* Desktop sidebar (dark) */}
-      <aside className="fixed inset-y-0 left-0 z-20 hidden w-60 flex-col bg-ink-900 px-3 py-6 md:flex">
+      {/* Desktop sidebar (dark) — only from lg up, so tablets get the roomier
+          full-width layout with the bottom bar instead of a cramped sidebar. */}
+      <aside className="fixed inset-y-0 left-0 z-20 hidden w-60 flex-col bg-ink-900 px-3 py-6 lg:flex">
         <div className="mb-8 flex items-center gap-2.5 px-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -102,8 +103,8 @@ export function Nav({ canManage }: { canManage: boolean }) {
         </div>
       </aside>
 
-      {/* Mobile bottom navigation (dark) */}
-      <nav className="fixed inset-x-0 bottom-0 z-20 flex h-16 items-stretch bg-ink-900 md:hidden">
+      {/* Mobile + tablet bottom navigation (dark) */}
+      <nav className="fixed inset-x-0 bottom-0 z-20 flex h-16 items-stretch bg-ink-900 lg:hidden">
         <div className="flex flex-1 items-stretch justify-around">
           {barLeft.map((item) => (
             <BottomLink

@@ -23,6 +23,8 @@ export function VisitTabs({
 }) {
   const [active, setActive] = useState<DocumentCategory>(CATEGORIES[0].key);
   const current = docs.filter((d) => d.category === active);
+  const activeLabel =
+    CATEGORIES.find((c) => c.key === active)?.label ?? String(active);
 
   return (
     // Vertical tabs beside the content on desktop; tabs wrap (no horizontal
@@ -64,7 +66,13 @@ export function VisitTabs({
       <div className="min-w-0 flex-1">
         {canEdit && (
           <div className="mb-4">
-            <UploadForm visitId={visitId} profileId={profileId} category={active} />
+            <UploadForm
+              visitId={visitId}
+              profileId={profileId}
+              category={active}
+              categoryLabel={activeLabel}
+              existingCount={current.length}
+            />
           </div>
         )}
 

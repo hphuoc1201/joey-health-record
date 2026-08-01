@@ -319,13 +319,18 @@ export function useUploadDocument() {
       profileId,
       category,
       file,
+      fileName,
     }: {
       visitId: string;
       profileId: string;
       category: DocumentCategory;
       file: File;
+      // Display name to store; defaults to the file's own name. Callers use this
+      // to rename uploads after the tab (e.g. "Xét nghiệm & CĐHA - 01.jpg").
+      fileName?: string;
     }) => {
-      const safeName = file.name.replace(/[^\w.\-]+/g, "_");
+      const displayName = fileName ?? file.name;
+      const safeName = displayName.replace(/[^\w.\-]+/g, "_");
       const path = `${profileId}/${visitId}/${category}/${crypto.randomUUID()}-${safeName}`;
       const { error: uploadErr } = await supabase.storage
         .from(BUCKET)
@@ -339,7 +344,7 @@ export function useUploadDocument() {
         visit_id: visitId,
         category,
         storage_path: path,
-        file_name: file.name,
+        file_name: displayName,
         mime_type: file.type || null,
         size_bytes: file.size,
       });

@@ -7,6 +7,7 @@ import type { VisitInput } from "@/lib/queries";
 import { useVisits } from "@/lib/queries";
 import { Combobox, type ComboOption } from "./Combobox";
 import { MultiCombobox, type MultiItem } from "./MultiCombobox";
+import { MoneyInput } from "./MoneyInput";
 import { HOSPITALS } from "@/lib/hospitals";
 import { SPECIALTIES } from "@/lib/specialties";
 import { ICD10 } from "@/lib/icd10";
@@ -264,12 +265,10 @@ export function VisitForm({
         </div>
 
         <Field label="Tổng chi phí (khám + thuốc)">
-          <input
-            inputMode="numeric"
+          <MoneyInput
             value={totalCost}
-            onChange={(e) => setTotalCost(e.target.value)}
-            placeholder="VD: 1500000"
-            className="input"
+            onChange={setTotalCost}
+            placeholder="VD: 1,500,000"
           />
         </Field>
 
@@ -289,12 +288,10 @@ export function VisitForm({
 
         {claimStatus === "claimed" && (
           <Field label="Số tiền claim được">
-            <input
-              inputMode="numeric"
+            <MoneyInput
               value={claimAmount}
-              onChange={(e) => setClaimAmount(e.target.value)}
-              placeholder="VD: 1200000"
-              className="input"
+              onChange={setClaimAmount}
+              placeholder="VD: 1,200,000"
             />
           </Field>
         )}

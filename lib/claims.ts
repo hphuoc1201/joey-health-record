@@ -44,8 +44,9 @@ export function visitTypeLabel(t: VisitType | null): string | null {
   return VISIT_TYPES.find((v) => v.value === t)?.label ?? null;
 }
 
-// Format a VND amount (numbers stored as plain numeric).
+// Format a VND amount: thousands separated by commas + a "đ" suffix
+// (e.g. 120000000 -> "120,000,000đ"), matching the money input fields.
 export function formatVnd(n: number | null | undefined): string {
   if (n == null) return "—";
-  return n.toLocaleString("vi-VN") + " ₫";
+  return n.toLocaleString("en-US") + "đ";
 }
