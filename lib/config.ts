@@ -6,4 +6,4 @@
 //
 // Set to false — and redeploy — before using real data, to restore the
 // email + OTP login flow.
-export const DEV_LOGIN = true;
+export const DEV_LOGIN = false;
