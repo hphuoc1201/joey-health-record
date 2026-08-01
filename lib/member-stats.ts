@@ -22,6 +22,11 @@ export interface MemberStats {
   topSpecialties: Counted[];
   topDiagnoses: Counted[];
   recurring: DiagnosisProgression[]; // diagnoses seen in 2+ visits
+  // Insurance / spending
+  totalCost: number; // sum of every visit's total cost
+  totalClaimed: number; // sum recovered from insurance (claimed visits)
+  outOfPocket: number; // totalCost - totalClaimed (never below 0)
+  claimedCount: number; // number of visits marked as claimed
 }
 
 // Everything derivable from a member's visit list (already sorted newest-first).
@@ -32,9 +37,19 @@ export function computeMemberStats(visits: VisitWithProfile[]): MemberStats {
   const diagnoses = new Map<string, Counted>();
   const progression = new Map<string, DiagnosisProgression>();
 
+  let totalCost = 0;
+  let totalClaimed = 0;
+  let claimedCount = 0;
+
   for (const v of visits) {
     const year = v.visit_date.slice(0, 4);
     years.set(year, (years.get(year) ?? 0) + 1);
+
+    if (v.total_cost != null) totalCost += v.total_cost;
+    if (v.claim_status === "claimed") {
+      claimedCount += 1;
+      if (v.claim_amount != null) totalClaimed += v.claim_amount;
+    }
 
     if (v.hospital) hospitals.add(v.hospital);
     if (v.specialty)
@@ -101,6 +116,10 @@ export function computeMemberStats(visits: VisitWithProfile[]): MemberStats {
     topSpecialties,
     topDiagnoses,
     recurring,
+    totalCost,
+    totalClaimed,
+    outOfPocket: Math.max(0, totalCost - totalClaimed),
+    claimedCount,
   };
 }
 

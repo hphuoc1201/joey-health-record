@@ -14,13 +14,17 @@ import {
   Activity,
   Loader2,
   ChevronRight,
+  Wallet,
+  ShieldCheck,
+  Coins,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useProfiles, useVisits, canEditProfile } from "@/lib/queries";
 import { ErrorState } from "@/components/ErrorState";
 import { lastPatientKey } from "@/components/PatientSelect";
-import { computeMemberStats, ageFromDob } from "@/lib/member-stats";
+import { computeMemberStats, ageFromDob, type MemberStats } from "@/lib/member-stats";
 import { formatDate } from "@/lib/format";
+import { formatVnd } from "@/lib/claims";
 import { GENDERS } from "@/lib/relationships";
 
 function MemberDetail() {
@@ -133,6 +137,9 @@ function MemberDetail() {
             />
           </div>
 
+          {/* Insurance & spending dashboard — only for the owner/admin. */}
+          {canEdit && stats.total > 0 && <InsuranceDashboard stats={stats} />}
+
           {stats.total === 0 ? (
             <div className="card border-dashed px-6 py-12 text-center">
               <CalendarClock className="mx-auto mb-3 h-10 w-10 text-gray-300" />
@@ -203,6 +210,102 @@ function MemberDetail() {
           )}
         </>
       )}
+    </div>
+  );
+}
+
+function InsuranceDashboard({ stats }: { stats: MemberStats }) {
+  const { totalCost, totalClaimed, outOfPocket, claimedCount, total } = stats;
+  const claimRate = totalCost > 0 ? Math.round((totalClaimed / totalCost) * 100) : 0;
+  // Widths for the claimed-vs-out-of-pocket bar.
+  const claimedPct = totalCost > 0 ? (totalClaimed / totalCost) * 100 : 0;
+
+  return (
+    <section className="card mb-5 p-5">
+      <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-gray-700">
+        <Wallet className="h-4 w-4 text-brand-500" />
+        Chi phí y tế &amp; bảo hiểm
+      </h2>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <MoneyStat
+          icon={Wallet}
+          label="Tổng chi tiêu y tế"
+          value={formatVnd(totalCost)}
+          tone="ink"
+        />
+        <MoneyStat
+          icon={ShieldCheck}
+          label="Đã claim lại được"
+          value={formatVnd(totalClaimed)}
+          tone="emerald"
+        />
+        <MoneyStat
+          icon={Coins}
+          label="Thực chi (tự trả)"
+          value={formatVnd(outOfPocket)}
+          tone="amber"
+        />
+      </div>
+
+      {/* Proportion bar: claimed vs out-of-pocket */}
+      {totalCost > 0 && (
+        <div className="mt-4">
+          <div className="mb-1.5 flex items-center justify-between text-xs text-gray-500">
+            <span>
+              Tỷ lệ được bảo hiểm chi trả:{" "}
+              <span className="font-semibold text-emerald-600">{claimRate}%</span>
+            </span>
+            <span>
+              {claimedCount}/{total} lần đã claim
+            </span>
+          </div>
+          <div className="flex h-3 overflow-hidden rounded-full bg-amber-100">
+            <div
+              className="h-full bg-emerald-500"
+              style={{ width: `${claimedPct}%` }}
+              title={`Đã claim: ${formatVnd(totalClaimed)}`}
+            />
+          </div>
+          <div className="mt-1.5 flex items-center gap-4 text-[11px] text-gray-400">
+            <span className="flex items-center gap-1">
+              <span className="h-2 w-2 rounded-full bg-emerald-500" />
+              Bảo hiểm chi trả
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="h-2 w-2 rounded-full bg-amber-400" />
+              Tự chi trả
+            </span>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function MoneyStat({
+  icon: Icon,
+  label,
+  value,
+  tone,
+}: {
+  icon: typeof Wallet;
+  label: string;
+  value: string;
+  tone: "ink" | "emerald" | "amber";
+}) {
+  const toneClass = {
+    ink: "bg-brand-50 text-brand-600",
+    emerald: "bg-emerald-50 text-emerald-600",
+    amber: "bg-amber-50 text-amber-600",
+  }[tone];
+  return (
+    <div className="rounded-xl border border-gray-100 bg-gray-50/60 p-3">
+      <div className={`mb-2 flex h-8 w-8 items-center justify-center rounded-lg ${toneClass}`}>
+        <Icon className="h-4 w-4" />
+      </div>
+      <p className="text-lg font-bold text-gray-900">{value}</p>
+      <p className="mt-0.5 text-xs text-gray-500">{label}</p>
     </div>
   );
 }

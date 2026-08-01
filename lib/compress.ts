@@ -3,8 +3,11 @@
 // re-encodes as JPEG. Non-images (e.g. PDFs) and anything that fails to decode
 // are returned unchanged — the browser cannot reliably recompress a PDF.
 
-const MAX_DIMENSION = 2000; // px, longest side
-const QUALITY = 0.72;
+// Tuned to keep documents (lab results, prescriptions, invoices) crisp and
+// legible — text stays readable — while still cutting a multi‑MB phone photo
+// down to a few hundred KB. Higher than a "photo" preset on purpose.
+const MAX_DIMENSION = 2400; // px, longest side
+const QUALITY = 0.85;
 
 export async function compressImage(file: File): Promise<File> {
   if (!file.type.startsWith("image/")) return file;

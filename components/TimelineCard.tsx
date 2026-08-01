@@ -3,7 +3,7 @@ import clsx from "clsx";
 import { Building2, Stethoscope, ChevronRight, Check } from "lucide-react";
 import type { VisitWithProfile } from "@/lib/types";
 import { formatDate } from "@/lib/format";
-import { claimLabel, claimClass, visitTypeLabel } from "@/lib/claims";
+import { visitTypeLabel } from "@/lib/claims";
 
 export function TimelineCard({
   visit,
@@ -43,14 +43,11 @@ export function TimelineCard({
           <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
             {formatDate(visit.visit_date)}
           </span>
-          <span
-            className={clsx(
-              "rounded-full px-2 py-0.5 text-xs font-medium",
-              claimClass(visit.claim_status),
-            )}
-          >
-            {claimLabel(visit.claim_status)}
-          </span>
+          {visit.claim_status === "claimed" && (
+            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+              Đã claim
+            </span>
+          )}
           {visitTypeLabel(visit.visit_type) && (
             <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600">
               {visitTypeLabel(visit.visit_type)}

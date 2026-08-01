@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
@@ -13,6 +13,8 @@ import {
   FileHeart,
   Loader2,
   Download,
+  ShieldCheck,
+  Save,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import {
@@ -21,18 +23,14 @@ import {
   useUpdateClaim,
   canEditProfile,
 } from "@/lib/queries";
+import type { VisitWithProfile } from "@/lib/types";
 import { VisitTabs } from "@/components/VisitTabs";
 import { DeleteButton } from "@/components/DeleteButton";
 import { ErrorState } from "@/components/ErrorState";
+import { MoneyInput } from "@/components/MoneyInput";
 import { downloadVisitsZip } from "@/lib/download";
 import { formatDate } from "@/lib/format";
-import {
-  claimClass,
-  CLAIM_STATUSES,
-  visitTypeLabel,
-  formatVnd,
-} from "@/lib/claims";
-import clsx from "clsx";
+import { visitTypeLabel, formatVnd } from "@/lib/claims";
 
 function VisitDetail() {
   const searchParams = useSearchParams();
@@ -41,7 +39,6 @@ function VisitDetail() {
   const auth = useAuth();
   const { data, isPending, error, refetch } = useVisit(id);
   const deleteVisit = useDeleteVisit();
-  const updateClaim = useUpdateClaim();
   const canEdit = canEditProfile(data?.visit.profiles, auth);
   const [downloading, setDownloading] = useState(false);
 
@@ -133,14 +130,14 @@ function VisitDetail() {
               type="button"
               onClick={downloadThis}
               disabled={downloading}
-              className="btn-secondary"
+              className="btn-primary !px-4 !py-2 text-sm"
             >
               {downloading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <Download className="h-4 w-4" />
               )}
-              Tải
+              Tải tài liệu
             </button>
             {canEdit && (
               <Link href={`/visit/edit?id=${visit.id}`} className="btn-secondary">
@@ -178,69 +175,7 @@ function VisitDetail() {
       </div>
 
       {/* Insurance claim panel */}
-      <div className="card mb-5 p-5">
-        <h2 className="mb-3 text-sm font-semibold text-gray-700">
-          Bảo hiểm (claim)
-        </h2>
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-          <div>
-            <span className="text-gray-500">Trạng thái: </span>
-            {canEdit ? (
-              <select
-                value={visit.claim_status}
-                onChange={(e) =>
-                  updateClaim.mutate({
-                    id: visit.id,
-                    claim_status: e.target.value as (typeof CLAIM_STATUSES)[number]["value"],
-                    claim_amount: visit.claim_amount,
-                  })
-                }
-                className={clsx(
-                  "rounded-full border-0 px-2 py-1 text-xs font-medium focus:ring-2 focus:ring-brand-200",
-                  claimClass(visit.claim_status),
-                )}
-              >
-                {CLAIM_STATUSES.map((s) => (
-                  <option key={s.value} value={s.value}>
-                    {s.label}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <span
-                className={clsx(
-                  "rounded-full px-2 py-0.5 text-xs font-medium",
-                  claimClass(visit.claim_status),
-                )}
-              >
-                {CLAIM_STATUSES.find((s) => s.value === visit.claim_status)?.label}
-              </span>
-            )}
-          </div>
-          <div>
-            <span className="text-gray-500">Tổng chi phí: </span>
-            <span className="font-semibold">{formatVnd(visit.total_cost)}</span>
-          </div>
-          {visit.claim_status === "claimed" && (
-            <>
-              <div>
-                <span className="text-gray-500">Claim được: </span>
-                <span className="font-semibold text-emerald-600">
-                  {formatVnd(visit.claim_amount)}
-                </span>
-              </div>
-              {visit.total_cost != null && visit.claim_amount != null && (
-                <div>
-                  <span className="text-gray-500">Còn tự trả: </span>
-                  <span className="font-semibold">
-                    {formatVnd(Math.max(0, visit.total_cost - visit.claim_amount))}
-                  </span>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </div>
+      <ClaimPanel visit={visit} canEdit={canEdit} />
 
       {/* Documents by category */}
       <VisitTabs
@@ -263,6 +198,145 @@ function VisitDetail() {
           />
         </div>
       )}
+    </div>
+  );
+}
+
+function toNum(s: string): number | null {
+  const n = Number(s.replace(/\D/g, ""));
+  return s.trim() && !Number.isNaN(n) ? n : null;
+}
+
+// Simple insurance panel: a single "claimed?" toggle plus, when claimed, the
+// amount recovered — with a live "out of pocket" figure. Editors can change it
+// inline; viewers see a read-only summary.
+function ClaimPanel({
+  visit,
+  canEdit,
+}: {
+  visit: VisitWithProfile;
+  canEdit: boolean;
+}) {
+  const updateClaim = useUpdateClaim();
+  const claimed = visit.claim_status === "claimed";
+  const [amount, setAmount] = useState(
+    visit.claim_amount != null ? String(visit.claim_amount) : "",
+  );
+
+  // Keep the local amount in sync when the saved value changes.
+  useEffect(() => {
+    setAmount(visit.claim_amount != null ? String(visit.claim_amount) : "");
+  }, [visit.claim_amount]);
+
+  const outOfPocket =
+    visit.total_cost != null && visit.claim_amount != null
+      ? Math.max(0, visit.total_cost - visit.claim_amount)
+      : null;
+
+  const dirty = claimed && toNum(amount) !== visit.claim_amount;
+
+  return (
+    <div className="card mb-5 p-5">
+      <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-700">
+        <ShieldCheck className="h-4 w-4 text-brand-500" />
+        Bảo hiểm
+      </h2>
+
+      {canEdit ? (
+        <>
+          <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-gray-300 bg-white px-3 py-2.5 transition-colors hover:border-gray-400">
+            <input
+              type="checkbox"
+              checked={claimed}
+              disabled={updateClaim.isPending}
+              onChange={(e) =>
+                updateClaim.mutate({
+                  id: visit.id,
+                  claim_status: e.target.checked ? "claimed" : "none",
+                  claim_amount: e.target.checked ? toNum(amount) : null,
+                })
+              }
+              className="h-5 w-5 shrink-0 accent-brand-600"
+            />
+            <span className="text-sm font-medium text-gray-700">
+              Đã claim được bảo hiểm cho lần khám này
+            </span>
+          </label>
+
+          {claimed && (
+            <div className="mt-3">
+              <span className="mb-1 block text-sm font-medium text-gray-700">
+                Số tiền claim được
+              </span>
+              <div className="flex items-start gap-2">
+                <div className="flex-1">
+                  <MoneyInput
+                    value={amount}
+                    onChange={setAmount}
+                    placeholder="VD: 1,200,000"
+                  />
+                </div>
+                <button
+                  type="button"
+                  disabled={!dirty || updateClaim.isPending}
+                  onClick={() =>
+                    updateClaim.mutate({
+                      id: visit.id,
+                      claim_status: "claimed",
+                      claim_amount: toNum(amount),
+                    })
+                  }
+                  className="btn-primary !px-4 !py-2.5 text-sm"
+                >
+                  {updateClaim.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4" />
+                  )}
+                  Lưu
+                </button>
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        <p className="text-sm">
+          <span className="text-gray-500">Trạng thái: </span>
+          {claimed ? (
+            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+              Đã claim
+            </span>
+          ) : (
+            <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+              Chưa claim
+            </span>
+          )}
+        </p>
+      )}
+
+      {/* Cost summary */}
+      <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-gray-100 pt-3 text-sm">
+        <div>
+          <span className="text-gray-500">Tổng chi phí: </span>
+          <span className="font-semibold">{formatVnd(visit.total_cost)}</span>
+        </div>
+        {claimed && (
+          <>
+            <div>
+              <span className="text-gray-500">Claim được: </span>
+              <span className="font-semibold text-emerald-600">
+                {formatVnd(visit.claim_amount)}
+              </span>
+            </div>
+            {outOfPocket != null && (
+              <div>
+                <span className="text-gray-500">Còn tự trả: </span>
+                <span className="font-semibold">{formatVnd(outOfPocket)}</span>
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }

@@ -11,7 +11,7 @@ import { MoneyInput } from "./MoneyInput";
 import { HOSPITALS } from "@/lib/hospitals";
 import { SPECIALTIES } from "@/lib/specialties";
 import { ICD10 } from "@/lib/icd10";
-import { VISIT_TYPES, CLAIM_STATUSES } from "@/lib/claims";
+import { VISIT_TYPES } from "@/lib/claims";
 
 function toNum(s: string): number | null {
   const n = Number(s.replace(/[^\d.]/g, ""));
@@ -272,29 +272,37 @@ export function VisitForm({
           />
         </Field>
 
-        <Field label="Trạng thái bảo hiểm (claim)">
-          <select
-            value={claimStatus}
-            onChange={(e) => setClaimStatus(e.target.value as ClaimStatus)}
-            className="input"
-          >
-            {CLAIM_STATUSES.map((s) => (
-              <option key={s.value} value={s.value}>
-                {s.label}
-              </option>
-            ))}
-          </select>
-        </Field>
-
-        {claimStatus === "claimed" && (
-          <Field label="Số tiền claim được">
-            <MoneyInput
-              value={claimAmount}
-              onChange={setClaimAmount}
-              placeholder="VD: 1,200,000"
+        <div className="sm:col-span-2">
+          <span className="mb-1 block text-sm font-medium text-gray-700">
+            Bảo hiểm
+          </span>
+          <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-gray-300 bg-white px-3 py-2.5 transition-colors hover:border-gray-400">
+            <input
+              type="checkbox"
+              checked={claimStatus === "claimed"}
+              onChange={(e) =>
+                setClaimStatus(e.target.checked ? "claimed" : "none")
+              }
+              className="h-5 w-5 shrink-0 accent-brand-600"
             />
-          </Field>
-        )}
+            <span className="text-sm font-medium text-gray-700">
+              Đã claim được bảo hiểm cho lần khám này
+            </span>
+          </label>
+
+          {claimStatus === "claimed" && (
+            <div className="mt-3">
+              <span className="mb-1 block text-sm font-medium text-gray-700">
+                Số tiền claim được
+              </span>
+              <MoneyInput
+                value={claimAmount}
+                onChange={setClaimAmount}
+                placeholder="VD: 1,200,000"
+              />
+            </div>
+          )}
+        </div>
 
         <div className="sm:col-span-2">
           <Field label="Ghi chú">

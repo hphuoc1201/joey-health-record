@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, UserPlus, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useProfiles, useSaveVisit } from "@/lib/queries";
 import { VisitForm } from "@/components/VisitForm";
+import { ProfileFields } from "@/components/ProfileFields";
 
 function NewVisit() {
   const router = useRouter();
@@ -15,6 +16,9 @@ function NewVisit() {
   const defaultProfileId = params.get("profile") ?? undefined;
   const { data: profiles, isPending } = useProfiles();
   const saveVisit = useSaveVisit();
+  // When the user has no members yet, they add one inline here; we remember its
+  // id so the visit form below opens with that new member preselected.
+  const [createdId, setCreatedId] = useState<string | undefined>();
 
   if (!loading && !canManage) {
     router.replace("/");
@@ -44,16 +48,25 @@ function NewVisit() {
       <h1 className="mb-5 text-2xl font-bold">Thêm lần khám</h1>
 
       {list.length === 0 ? (
-        <div className="card flex flex-col items-center border-dashed px-6 py-12 text-center">
-          <UserPlus className="mb-3 h-10 w-10 text-gray-300" />
-          <p className="font-medium text-gray-700">Bạn cần thêm thành viên trước</p>
-          <p className="mt-1 text-sm text-gray-500">
-            Mỗi lần khám thuộc về một thành viên, nên hãy thêm người đó trước đã.
-          </p>
-          <Link href="/profiles" className="btn-primary mt-4 !px-4 !py-2 text-sm">
-            <UserPlus className="h-4 w-4" />
-            Thêm thành viên
-          </Link>
+        <div className="card border-dashed p-5">
+          <div className="mb-4 flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+              <UserPlus className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="font-medium text-gray-800">
+                Thêm thành viên trước đã
+              </p>
+              <p className="mt-0.5 text-sm text-gray-500">
+                Mỗi lần khám thuộc về một thành viên. Thêm người này xong, form
+                ghi lần khám sẽ hiện ra ngay bên dưới.
+              </p>
+            </div>
+          </div>
+          <ProfileFields
+            submitLabel="Thêm thành viên & tiếp tục"
+            onCreated={(id) => setCreatedId(id)}
+          />
         </div>
       ) : (
         <VisitForm
@@ -62,7 +75,7 @@ function NewVisit() {
             router.replace(`/visit?id=${id}`);
           }}
           profiles={list}
-          defaultProfileId={defaultProfileId}
+          defaultProfileId={createdId ?? defaultProfileId}
         />
       )}
     </div>
