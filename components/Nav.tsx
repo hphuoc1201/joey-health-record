@@ -40,26 +40,19 @@ export function Nav({ canManage }: { canManage: boolean }) {
 
   const fab = items.find((i) => i.href === ADD_HREF);
   const linkBarItems = items.filter((i) => i.href !== ADD_HREF);
-  // On mobile, the logout action rides in the bottom bar as its own item.
   const barCount = linkBarItems.length + 1; // + logout
   const half = Math.ceil(barCount / 2);
-
   const barLeft = fab ? linkBarItems.slice(0, half) : linkBarItems;
   const barRight = fab ? linkBarItems.slice(half) : [];
 
   return (
     <>
-      {/* Desktop sidebar (dark) — only from lg up, so tablets get the roomier
-          full-width layout with the bottom bar instead of a cramped sidebar. */}
-      <aside className="fixed inset-y-0 left-0 z-20 hidden w-60 flex-col bg-ink-900 px-3 py-6 lg:flex">
-        <div className="mb-8 flex items-center gap-2.5 px-2">
+      {/* Desktop: MD3 navigation drawer (light surface). */}
+      <aside className="fixed inset-y-0 left-0 z-20 hidden w-64 flex-col bg-surface-container px-3 py-6 lg:flex">
+        <div className="mb-6 flex items-center gap-3 px-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/logo.svg"
-            alt=""
-            className="h-10 w-10 rounded-2xl shadow-fab"
-          />
-          <span className="text-[15px] font-bold tracking-tight text-white">
+          <img src="/logo.svg" alt="" className="h-10 w-10 rounded-md-md" />
+          <span className="text-[15px] font-medium tracking-tight text-on-surface">
             Hồ sơ sức khỏe
           </span>
         </div>
@@ -73,29 +66,31 @@ export function Nav({ canManage }: { canManage: boolean }) {
                 key={item.href}
                 href={item.href}
                 className={clsx(
-                  "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150 active:scale-[0.98]",
+                  "flex h-14 items-center gap-3 rounded-full px-4 text-sm font-medium tracking-[.1px] transition-colors duration-150",
                   active
-                    ? "bg-white/10 text-white"
-                    : "text-gray-400 hover:bg-white/5 hover:text-white",
+                    ? "bg-secondary-container text-on-secondary-container"
+                    : "text-on-surface-variant hover:bg-surface-high hover:text-on-surface",
                 )}
               >
-                <Icon className="h-5 w-5" />
+                <Icon className="h-5 w-5" strokeWidth={active ? 2.4 : 2} />
                 {item.label}
               </Link>
             );
           })}
         </nav>
 
-        {/* Footer: user + logout */}
-        <div className="mt-auto border-t border-white/10 pt-3">
+        <div className="mt-auto border-t border-outline-variant pt-3">
           {email && (
-            <p className="mb-1 truncate px-3 text-xs text-gray-500" title={email}>
+            <p
+              className="mb-1 truncate px-4 text-xs text-on-surface-variant"
+              title={email}
+            >
               {email}
             </p>
           )}
           <button
             onClick={signOut}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-400 transition-all duration-150 hover:bg-white/5 hover:text-white active:scale-[0.98]"
+            className="flex h-14 w-full items-center gap-3 rounded-full px-4 text-sm font-medium tracking-[.1px] text-on-surface-variant transition-colors duration-150 hover:bg-surface-high hover:text-on-surface"
           >
             <LogOut className="h-5 w-5" />
             Đăng xuất
@@ -103,8 +98,8 @@ export function Nav({ canManage }: { canManage: boolean }) {
         </div>
       </aside>
 
-      {/* Mobile + tablet bottom navigation (dark) */}
-      <nav className="fixed inset-x-0 bottom-0 z-20 flex h-16 items-stretch bg-ink-900 lg:hidden">
+      {/* Mobile + tablet: MD3 navigation bar (bottom). */}
+      <nav className="fixed inset-x-0 bottom-0 z-20 flex h-20 items-stretch border-t border-outline-variant bg-surface-container lg:hidden">
         <div className="flex flex-1 items-stretch justify-around">
           {barLeft.map((item) => (
             <BottomLink
@@ -119,7 +114,7 @@ export function Nav({ canManage }: { canManage: boolean }) {
           <Link
             href={fab.href}
             aria-label={fab.label}
-            className="absolute -top-5 left-1/2 flex h-14 w-14 -translate-x-1/2 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-fab ring-4 ring-[#f4f6fb] transition-transform duration-150 active:scale-90"
+            className="absolute -top-4 left-1/2 flex h-16 w-16 -translate-x-1/2 items-center justify-center rounded-md-lg bg-primary-container text-on-primary-container shadow-fab transition-transform duration-150 active:scale-90"
           >
             <Plus className="h-7 w-7" />
           </Link>
@@ -145,20 +140,22 @@ function BottomLink({ item, active }: { item: NavItem; active: boolean }) {
   return (
     <Link
       href={item.href}
-      className={clsx(
-        "flex flex-1 flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors duration-150 active:scale-90",
-        active ? "text-white" : "text-gray-500 hover:text-gray-300",
-      )}
+      className="flex flex-1 flex-col items-center justify-center gap-1 pt-1 text-[12px] font-medium transition-colors duration-150 active:scale-95"
     >
+      {/* MD3 active indicator: a pill behind the icon. */}
       <span
         className={clsx(
-          "flex h-7 w-7 items-center justify-center rounded-full transition-colors",
-          active && "bg-white/10",
+          "flex h-8 w-16 items-center justify-center rounded-full transition-colors",
+          active
+            ? "bg-secondary-container text-on-secondary-container"
+            : "text-on-surface-variant",
         )}
       >
-        <Icon className="h-5 w-5" />
+        <Icon className="h-6 w-6" strokeWidth={active ? 2.4 : 2} />
       </span>
-      {item.label}
+      <span className={active ? "text-on-surface" : "text-on-surface-variant"}>
+        {item.label}
+      </span>
     </Link>
   );
 }
@@ -175,10 +172,10 @@ function BottomButton({
   return (
     <button
       onClick={onClick}
-      className="flex flex-1 flex-col items-center justify-center gap-0.5 text-[11px] font-medium text-gray-500 transition-colors duration-150 hover:text-gray-300 active:scale-90"
+      className="flex flex-1 flex-col items-center justify-center gap-1 pt-1 text-[12px] font-medium text-on-surface-variant transition-colors duration-150 active:scale-95"
     >
-      <span className="flex h-7 w-7 items-center justify-center rounded-full">
-        <Icon className="h-5 w-5" />
+      <span className="flex h-8 w-16 items-center justify-center rounded-full">
+        <Icon className="h-6 w-6" />
       </span>
       {label}
     </button>
