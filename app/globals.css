@@ -2,46 +2,169 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Material Design 3 (Material You) — light scheme, blue-based primary.
+ * Color roles below are the single source of truth; tailwind.config.ts maps
+ * its semantic color names to these variables.
+ */
 :root {
   color-scheme: light;
+
+  /* Primary */
+  --md-primary: #2563eb;
+  --md-on-primary: #ffffff;
+  --md-primary-container: #dbe7ff;
+  --md-on-primary-container: #001b3e;
+
+  /* Secondary (neutral-blue) */
+  --md-secondary: #545f71;
+  --md-on-secondary: #ffffff;
+  --md-secondary-container: #dae2f9;
+  --md-on-secondary-container: #111c2b;
+
+  /* Tertiary (soft violet) */
+  --md-tertiary: #6c5677;
+  --md-on-tertiary: #ffffff;
+  --md-tertiary-container: #f4d9ff;
+  --md-on-tertiary-container: #261431;
+
+  /* Error */
+  --md-error: #ba1a1a;
+  --md-on-error: #ffffff;
+  --md-error-container: #ffdad6;
+  --md-on-error-container: #410002;
+
+  /* Neutrals / surfaces */
+  --md-surface: #faf9fd;
+  --md-surface-dim: #dad9e0;
+  --md-surface-bright: #faf9fd;
+  --md-surface-container-lowest: #ffffff;
+  --md-surface-container-low: #f4f3fa;
+  --md-surface-container: #eeedf4;
+  --md-surface-container-high: #e8e7ef;
+  --md-surface-container-highest: #e3e1e9;
+  --md-on-surface: #1a1c1e;
+  --md-on-surface-variant: #43474e;
+  --md-outline: #73777f;
+  --md-outline-variant: #c3c6cf;
+  --md-inverse-surface: #2f3033;
+  --md-inverse-on-surface: #f1f0f7;
+  --md-scrim: #000000;
+
+  /* Elevation */
+  --md-elev-1: 0 1px 2px 0 rgba(0, 0, 0, 0.06), 0 1px 3px 1px rgba(0, 0, 0, 0.08);
+  --md-elev-2: 0 1px 2px 0 rgba(0, 0, 0, 0.06), 0 2px 6px 2px rgba(0, 0, 0, 0.09);
+  --md-elev-3: 0 4px 8px 3px rgba(0, 0, 0, 0.09), 0 1px 3px 0 rgba(0, 0, 0, 0.1);
 }
 
 body {
-  @apply text-gray-900 antialiased;
-  background-color: #f4f6fb;
-  background-image:
-    radial-gradient(60rem 60rem at 110% -10%, rgba(37, 99, 235, 0.06), transparent 60%),
-    radial-gradient(50rem 50rem at -10% 0%, rgba(59, 130, 246, 0.05), transparent 55%);
-  background-attachment: fixed;
+  background-color: var(--md-surface-container-low);
+  color: var(--md-on-surface);
+  font-family: var(--font-roboto), Roboto, system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 @layer components {
-  /* Primary action button: subtle gradient, lifts on hover, presses down. */
+  /* =========================================================
+   * Buttons — MD3 shape: full pill, 40px tall, label-large type.
+   * ========================================================= */
+
+  /* Filled button (primary action). */
   .btn-primary {
-    @apply flex items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 font-medium text-white shadow-sm transition-all duration-150 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:scale-[0.97] disabled:pointer-events-none disabled:translate-y-0 disabled:opacity-60;
-    background-image: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    @apply inline-flex min-h-[40px] items-center justify-center gap-2 rounded-full px-6 text-sm font-medium tracking-[.1px] transition-all duration-150 active:scale-[0.98] disabled:pointer-events-none;
+    background-color: var(--md-primary);
+    color: var(--md-on-primary);
+  }
+  .btn-primary:hover {
+    background-color: color-mix(in srgb, var(--md-on-primary) 8%, var(--md-primary));
+    box-shadow: var(--md-elev-1);
+  }
+  .btn-primary:active {
+    background-color: color-mix(in srgb, var(--md-on-primary) 12%, var(--md-primary));
+    box-shadow: none;
+  }
+  .btn-primary:disabled {
+    background-color: color-mix(in srgb, var(--md-on-surface) 12%, transparent);
+    color: color-mix(in srgb, var(--md-on-surface) 38%, transparent);
+    box-shadow: none;
   }
 
-  /* Secondary (outlined) button. */
+  /* Tonal button (secondary action). */
   .btn-secondary {
-    @apply flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-600 shadow-sm transition-all duration-150 hover:border-brand-300 hover:text-brand-700 hover:shadow active:scale-[0.97] disabled:pointer-events-none disabled:opacity-60;
+    @apply inline-flex min-h-[40px] items-center justify-center gap-2 rounded-full px-5 text-sm font-medium tracking-[.1px] transition-all duration-150 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-60;
+    background-color: var(--md-secondary-container);
+    color: var(--md-on-secondary-container);
+  }
+  .btn-secondary:hover {
+    background-color: color-mix(in srgb, var(--md-on-secondary-container) 8%, var(--md-secondary-container));
+    box-shadow: var(--md-elev-1);
+  }
+  .btn-secondary:active {
+    background-color: color-mix(in srgb, var(--md-on-secondary-container) 12%, var(--md-secondary-container));
   }
 
-  /* Destructive (outlined red) button. */
+  /* Error tonal button (destructive action). */
   .btn-danger {
-    @apply flex items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-600 shadow-sm transition-all duration-150 hover:border-red-300 hover:bg-red-50 hover:shadow active:scale-[0.97] disabled:pointer-events-none disabled:opacity-60;
+    @apply inline-flex min-h-[40px] items-center justify-center gap-2 rounded-full px-5 text-sm font-medium tracking-[.1px] transition-all duration-150 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-60;
+    background-color: var(--md-error-container);
+    color: var(--md-on-error-container);
+  }
+  .btn-danger:hover {
+    background-color: color-mix(in srgb, var(--md-on-error-container) 8%, var(--md-error-container));
+    box-shadow: var(--md-elev-1);
   }
 
-  /* Card container: lifts slightly on hover. */
+  /* Outlined button (low-emphasis action). */
+  .btn-outlined {
+    @apply inline-flex min-h-[40px] items-center justify-center gap-2 rounded-full px-6 text-sm font-medium tracking-[.1px] transition-all duration-150 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-60;
+    border: 1px solid var(--md-outline-variant);
+    color: var(--md-primary);
+    background-color: transparent;
+  }
+  .btn-outlined:hover {
+    background-color: color-mix(in srgb, var(--md-primary) 8%, transparent);
+    border-color: var(--md-outline);
+  }
+
+  /* =========================================================
+   * Cards — MD3 elevated card.
+   * ========================================================= */
   .card {
-    @apply rounded-2xl border border-gray-200/80 bg-white shadow-sm transition-all duration-150;
+    @apply rounded-2xl transition-all duration-150;
+    background-color: var(--md-surface-container-lowest);
+    border: 1px solid var(--md-outline-variant);
+    box-shadow: var(--md-elev-1);
   }
-  .card-hover {
-    @apply hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-lg active:translate-y-0 active:shadow;
+  .card-hover:hover {
+    box-shadow: var(--md-elev-2);
+    border-color: color-mix(in srgb, var(--md-primary) 40%, var(--md-outline-variant));
+  }
+  .card-hover:active {
+    box-shadow: var(--md-elev-1);
   }
 
-  /* Form input. */
+  /* =========================================================
+   * Text field — MD3 outlined.
+   * ========================================================= */
   .input {
-    @apply w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-base outline-none transition-all duration-150 hover:border-gray-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-100;
+    @apply w-full rounded-lg px-3.5 py-2.5 text-base outline-none transition-all duration-150;
+    background-color: var(--md-surface-container-lowest);
+    color: var(--md-on-surface);
+    border: 1px solid var(--md-outline);
+  }
+  .input::placeholder {
+    color: var(--md-on-surface-variant);
+  }
+  .input:hover {
+    border-color: var(--md-on-surface);
+  }
+  .input:focus {
+    border-color: var(--md-primary);
+    box-shadow: inset 0 0 0 1px var(--md-primary);
+  }
+  select.input {
+    @apply cursor-pointer;
   }
 }

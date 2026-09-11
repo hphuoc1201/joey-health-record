@@ -49,7 +49,7 @@ export function TimelineCard({
             </span>
           )}
           {visitTypeLabel(visit.visit_type) && (
-            <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600">
+            <span className="rounded-full bg-tertiary-container px-2 py-0.5 text-xs font-medium text-on-tertiary-container">
               {visitTypeLabel(visit.visit_type)}
             </span>
           )}

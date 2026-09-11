@@ -49,21 +49,21 @@ export function ConfirmDialog({
       aria-modal="true"
     >
       <div
-        className="absolute inset-0 bg-ink-900/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         onClick={() => !pending && onCancel()}
       />
-      <div className="relative w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl">
-        <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-red-50 text-red-600">
+      <div className="relative w-full max-w-sm rounded-md-xl bg-surface-high p-6 shadow-md-3">
+        <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-error-container text-on-error-container">
           <AlertTriangle className="h-5 w-5" />
         </div>
-        <h2 className="text-lg font-bold text-gray-900">{title}</h2>
-        <p className="mt-1.5 text-sm text-gray-600">{message}</p>
-        <div className="mt-5 flex justify-end gap-2">
+        <h2 className="text-xl font-medium text-on-surface">{title}</h2>
+        <p className="mt-2 text-sm text-on-surface-variant">{message}</p>
+        <div className="mt-6 flex justify-end gap-2">
           <button
             type="button"
             onClick={onCancel}
             disabled={pending}
-            className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-50 active:scale-[0.97] disabled:opacity-60"
+            className="inline-flex min-h-[40px] items-center justify-center rounded-full px-4 text-sm font-medium tracking-[.1px] text-primary transition-colors hover:bg-surface-container active:scale-[0.98] disabled:opacity-60"
           >
             {cancelLabel}
           </button>
@@ -71,7 +71,7 @@ export function ConfirmDialog({
             type="button"
             onClick={onConfirm}
             disabled={pending}
-            className="flex items-center justify-center gap-1.5 rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-red-700 active:scale-[0.97] disabled:opacity-60"
+            className="inline-flex min-h-[40px] items-center justify-center gap-1.5 rounded-full bg-error px-5 text-sm font-medium tracking-[.1px] text-on-error transition-all hover:shadow-md-1 active:scale-[0.98] disabled:opacity-60"
           >
             {pending && <Loader2 className="h-4 w-4 animate-spin" />}
             {confirmLabel}
